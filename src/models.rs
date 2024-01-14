@@ -2,9 +2,13 @@
 
 #![allow(unused)]
 #![allow(clippy::all)]
+use diesel::prelude::*;
+use crate::schema::account;
+use super::schema::*;
 
-
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Selectable, Debug)]
+#[diesel(table_name = account)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Account {
     pub id: String,
     pub contact: String,
@@ -18,7 +22,10 @@ pub struct Account {
     pub notes: Option<String>,
 }
 
-#[derive(Queryable, Debug)]
+
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = charge)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Charge {
     pub id: String,
     pub name: String,
@@ -26,7 +33,9 @@ pub struct Charge {
     pub date_effective: String,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = creditor)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Creditor {
     pub id: String,
     pub business_name: String,
@@ -37,7 +46,9 @@ pub struct Creditor {
     pub apr: String,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = deal)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Deal {
     pub id: String,
     pub state: i32,
@@ -58,7 +69,9 @@ pub struct Deal {
     pub tax_rtd: Option<String>,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = deal_charge)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct DealCharge {
     pub deal: Option<String>,
     pub charge: Option<String>,
@@ -67,14 +80,18 @@ pub struct DealCharge {
     pub id: String,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = deal_salesman)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct DealSalesman {
     pub id: String,
     pub deal: String,
     pub salesman: String,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = deal_trade)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct DealTrade {
     pub id: String,
     pub deal: String,
@@ -82,14 +99,18 @@ pub struct DealTrade {
     pub value: String,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = default_charge)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct DefaultCharge {
     pub id: String,
     pub creditor: String,
     pub charge: String,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = inventory)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Inventory {
     pub id: String,
     pub vin: String,
@@ -110,14 +131,18 @@ pub struct Inventory {
     pub state: i32,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = key)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Key {
     pub id: String,
     pub hashed_password: Option<String>,
     pub user_id: String,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = payment)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Payment {
     pub id: String,
     pub deal: String,
@@ -125,7 +150,9 @@ pub struct Payment {
     pub amount: String,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = person)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Person {
     pub id: String,
     pub name_prefix: Option<String>,
@@ -148,13 +175,17 @@ pub struct Person {
     pub email_secondary: Option<String>,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = salesman)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Salesman {
     pub id: String,
     pub person: String,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = session)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Session {
     pub id: String,
     pub user_id: String,
@@ -163,7 +194,9 @@ pub struct Session {
     pub iv: Option<String>,
 }
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, Selectable)]
+#[diesel(table_name = user)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {
     pub id: String,
     pub username: String,
