@@ -8,9 +8,9 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-slint = "1.0"
 diesel = { version = "2.1.4", features = ["sqlite"] }
+dioxus = "0.4.3"
+dioxus-desktop = "0.4.3"
 dotenvy = "0.15.7"
 
-[build-dependencies]
-slint-build = "1.0"
+[n.build-dependencies]
