@@ -7,6 +7,8 @@ use std::env;
 
 use crate::models::{Person};
 use crate::schema::{person};
+use crate::schema::charge::name;
+use crate::schema::person::first_name;
 
 pub fn establish_connection() -> SqliteConnection {
     dotenv().ok();
@@ -17,22 +19,8 @@ pub fn establish_connection() -> SqliteConnection {
 }
 
 pub fn get_account() -> Person {
-    use crate::schema::account;
-
     let mut conn = establish_connection();
 
-    // let account = Account {
-    //     id: "".to_string(),
-    //     contact: "".to_string(),
-    //     cosigner: None,
-    //     date_of_birth: None,
-    //     license_number: "".to_string(),
-    //     license_expiration: None,
-    //     date_added: None,
-    //     date_modified: None,
-    //     current_standing: None,
-    //     notes: None,
-    // };
 
     let momo = person::table
         .filter(person::first_name.eq("matthew"))
@@ -42,14 +30,11 @@ pub fn get_account() -> Person {
     momo.unwrap()
 }
 
-// pub fn create_post(conn: &mut SqliteConnection, title: &str, body: &str) -> Post {
-//     use crate::schema::posts;
-//
-//     let new_post = NewPost { title, body };
-//
-//     diesel::insert_into(posts::table)
-//         .values(&new_post)
-//         .returning(Post::as_returning())
-//         .get_result(conn)
-//         .expect("Error saving new post")
-// }
+pub fn get_people() -> Vec<String> {
+    let mut conn = establish_connection();
+
+    let all_names = person::table.select(first_name).load::<String>(&mut conn);
+
+    all_names.unwrap()
+
+}

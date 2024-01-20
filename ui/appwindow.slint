@@ -1,8 +1,9 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { Button, VerticalBox, ComboBox } from "std-widgets.slint";
 
 export component AppWindow inherits Window {
     in-out property<int> clicks: 0;
     in-out property<string> name: "";
+    in-out property<[string]> names: [""];
     callback request-increase-value();
     VerticalBox {
         Text {
@@ -13,11 +14,16 @@ export component AppWindow inherits Window {
         }
         Button {
             text: "Increase value";
-            height: 50%;
-            max-height: 40px;
+            height: 30%;
             clicked => {
                 root.request-increase-value();
             }
         }
+
+    ComboBox {
+        height: self.preferred-height;
+                model: root.names;
+        current-value: "first";
+    }
     }
 }
