@@ -2,13 +2,7 @@
 
 // import the prelude to get access to the `rsx!` macro and the `Scope` and `Element` types
 use dioxus::prelude::*;
-
-use autoflp_desktop::schema::charge::name;
-use autoflp_desktop::{establish_connection, get_account, get_people};
-use dioxus::html::{i, li, p, ul};
-use dioxus_desktop::launch;
-use std::rc::Rc;
-use autoflp_desktop::schema::deal_trade::value;
+use autoflp_desktop::get_people;
 
 // Remember: Owned props must implement `PartialEq`!
 #[derive(PartialEq, Props)]

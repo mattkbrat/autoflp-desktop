@@ -7,7 +7,6 @@ use std::env;
 
 use crate::models::{Person};
 use crate::schema::{person};
-use crate::schema::charge::name;
 use crate::schema::person::{first_name, last_name};
 
 pub fn establish_connection() -> SqliteConnection {
