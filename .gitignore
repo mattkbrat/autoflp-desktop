@@ -6,3 +6,4 @@
 **/*.rs.bk
 *.db
 .env
+autoflp_desktop
