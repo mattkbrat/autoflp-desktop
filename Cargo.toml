@@ -11,6 +11,12 @@ build = "build.rs"
 diesel = { version = "2.1.4", features = ["sqlite"] }
 dioxus = "0.4.3"
 dioxus-desktop = "0.4.3"
+dioxus-router = "0.4.3"
 dotenvy = "0.15.7"
+either = "1.9.0"
+serde_json = "1.0.111"
+chrono = { versionL = "0.4.33", features = ["serde"] }
+chronoutil = "0.2.6"
+date_component = "0.4.1"
 
 [n.build-dependencies]
