@@ -6,8 +6,9 @@ use diesel::prelude::*;
 use crate::schema::account;
 use super::schema::*;
 
-#[derive(Queryable, Selectable, Debug)]
+#[derive(Queryable, Identifiable, Associations, Selectable, PartialEq, Debug)]
 #[diesel(table_name = account)]
+#[diesel(belongs_to(Person, foreign_key = contact))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Account {
     pub id: String,
@@ -21,6 +22,7 @@ pub struct Account {
     pub current_standing: Option<String>,
     pub notes: Option<String>,
 }
+
 
 
 #[derive(Queryable, Debug, Selectable)]
@@ -150,7 +152,7 @@ pub struct Payment {
     pub amount: String,
 }
 
-#[derive(Queryable, Debug, Selectable)]
+#[derive(Queryable, Debug, Selectable, Identifiable, PartialEq)]
 #[diesel(table_name = person)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Person {
