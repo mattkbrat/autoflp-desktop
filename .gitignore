@@ -7,3 +7,5 @@
 *.db
 .env
 autoflp_desktop
+/dist
+/public
