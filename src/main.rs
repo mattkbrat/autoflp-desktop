@@ -5,10 +5,9 @@
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 
-use autoflp_desktop::{get_account, get_people, finance};
-
-use finance::{add};
+use autoflp_desktop::{finance, get_account_details, get_account_people};
 use autoflp_desktop::models::Account;
+use finance::add;
 
 type People = Vec<[String; 2]>;
 
@@ -64,9 +63,7 @@ enum Route {
 
 #[component]
 fn App(cx: Scope) -> Element {
-    render! {
-        Router::<Route> {}
-    }
+    render! { Router::<Route> {} }
 }
 
 
@@ -74,36 +71,40 @@ fn App(cx: Scope) -> Element {
 fn NavBar(cx: Scope) -> Element {
     render! {
         nav {
-            div {
-                class: "flex items-center gap-4",
-                            div {
-                class: "flex flex-row items-center",
+            div { class: "flex items-center gap-4",
+                div { class: "flex flex-row items-center",
 
-            img {
-            src: "https://avatars.githubusercontent.com/u/79236386?s=200&v=4",
-            class: "primary_button",
-            width: "100px"
-            },
-        },
+                    img {
+                        src: "https://avatars.githubusercontent.com/u/79236386?s=200&v=4",
+                        class: "primary_button",
+                        width: "100px"
+                    }
+                }
 
-            ul {
-            class: "flex justify-around w-screen h-min",
+                ul { class: "flex justify-around w-screen h-min",
 
-                li { Link { to: Route::Home {}, "Home" } }
-                li { Link { to: Route::BlogList {}, "Blog" } }
-                li { Link { to: Route::PeoplePage {}, "People" } }
-                li { Link { to: Route::FinancePage {}, "Finance" } }
-
+                    li {
+                        Link { to: Route::Home {}, "Home" }
+                    }
+                    li {
+                        Link { to: Route::BlogList {}, "Blog" }
+                    }
+                    li {
+                        Link { to: Route::PeoplePage {}, "People" }
+                    }
+                    li {
+                        Link { to: Route::FinancePage {}, "Finance" }
+                    }
+                }
             }
         }
-            }
         Outlet::<Route> {}
     }
 }
 
 #[component]
 fn PeoplePage(cx: Scope) -> Element {
-    let people = get_people();
+    let people = get_account_people();
     use_shared_state_provider(cx, || SelectedPerson(Option::from("".to_string())));
     use_shared_state_provider(cx, || SelectedAccount(None));
 
@@ -116,9 +117,7 @@ fn PeoplePage(cx: Scope) -> Element {
         [full_name, (&x.2).to_string()]
     }).collect::<People>();
 
-    cx.render(rsx!(
-        PeopleList { people: names },
-    ))
+    cx.render(rsx!( PeopleList { people: names } ))
 }
 
 #[component]
@@ -155,9 +154,7 @@ fn FinancePage(cx: Scope) -> Element {
 
 #[component]
 fn Home(cx: Scope) -> Element {
-    render! {
-        About{}
-    }
+    render! { About {} }
 }
 
 #[component]
@@ -175,13 +172,17 @@ fn BlogList(cx: Scope) -> Element {
         ul {
             li {
                 Link {
-                    to: Route::BlogPost { name: "Blog post 1".into() },
+                    to: Route::BlogPost {
+                        name: "Blog post 1".into(),
+                    },
                     "Read the first blog post"
                 }
             }
             li {
                 Link {
-                    to: Route::BlogPost { name: "Blog post 2".into() },
+                    to: Route::BlogPost {
+                        name: "Blog post 2".into(),
+                    },
                     "Read the second blog post"
                 }
             }
@@ -191,9 +192,7 @@ fn BlogList(cx: Scope) -> Element {
 
 #[component]
 fn BlogPost(cx: Scope, name: String) -> Element {
-    render! {
-        h2 { "Blog Post: {name}"}
-    }
+    render! { h2 { "Blog Post: {name}" } }
 }
 
 #[component]
@@ -201,41 +200,30 @@ fn PageNotFound(cx: Scope, route: Vec<String>) -> Element {
     render! {
         h1 { "Page not found" }
         p { "We are terribly sorry, but the page you requested doesn't exist." }
-        pre {
-            color: "red",
-            "log:\nattemped to navigate to: {route:?}"
-        }
+        pre { color: "red", "log:\nattemped to navigate to: {route:?}" }
     }
 }
 
 #[component]
 pub fn About(cx: Scope) -> Element {
-    cx.render(rsx!(p {
-         class: "text-2xl",
+    cx.render(rsx!(
+        p { class: "text-2xl",
 
-
-         b {"AutoFLP Desktop",
-
-        },
-        pre {
-            class: "text-sm",
-
-        "Auto Dealer Management Software for Small, Family Owned Businesses"
+            b { "AutoFLP Desktop" }
+            pre { class: "text-sm", "Auto Dealer Management Software for Small, Family Owned Businesses" }
         }
-    }))
+    ))
 }
 
 pub fn PeopleList(cx: Scope<PeopleProps>) -> Element {
     let selected_person_context = use_shared_state::<SelectedPerson>(cx).unwrap();
 
-    cx.render(rsx!(select {
-        onchange: move | event |
-    selected_person_context.write().0 = Option::from(event.value.clone()
-    ),
-        cx.props.people.iter().map(|[x, y]| rsx!{ option { key: "${&y}", id: "${&x}", value: "{&y}", x.clone() }} )
-    },         Profile {
-            id: selected_person_context.read().0.clone().expect("MUST HAVE ID")
-        }))
+    cx.render(rsx!(
+        select { onchange: move |event| selected_person_context.write().0 = Option::from(event.value.clone()),
+            cx.props.people.iter().map(|[x, y]| rsx!{ option { key: "${&y}", id: "${&x}", value: "{&y}", x.clone() }} )
+        }
+        Profile { id: selected_person_context.read().0.clone().expect("MUST HAVE ID") }
+    ))
 }
 
 // #[component]
@@ -273,40 +261,86 @@ pub fn PeopleList(cx: Scope<PeopleProps>) -> Element {
 //
 //
 //
-
-
 #[component]
 fn Profile(cx: Scope, id: Option<String>) -> Element {
-    let name = use_state(cx, || None);
+    let details = use_state(cx, || None);
 
     // Only fetch the user data when the id changes.
     use_effect(cx, (id, ), |(id, )| {
-        to_owned![name];
+        to_owned![details];
         async move {
-            let user = get_account(id);
-            if user.is_some() {
-                name.set(user);
+            let account_details = get_account_details(id);
+            if let Some(account_details) = account_details {
+                details.set(Some(account_details));
             }
         }
     });
 
-    let name = name.clone();
-
-    if name.is_some() {
-        let name_ref = name.as_ref();
-
-        let (this_person, this_account) = name_ref.unwrap();
-
-        let person_name = this_person.last_name.to_owned() + ", " + &this_person.first_name;
-
-        render!(
-            p { "{person_name} {&this_account.license_number}" }
-        )
-        //
-    } else {
-        //
-        render!(
-            p { "No account" }
-        )
+    if details.is_none() {
+        return render!( p { "Loading..." } );
     }
+
+    let details = details.clone();
+
+
+    let details_ref = details.as_ref();
+
+
+    let (deals, person, account) = details_ref.unwrap();
+    let deals = deals.as_ref();
+    let deal_is_some = deals.is_some();
+
+    render!(
+        div {
+            h1 { "{person.first_name} {person.last_name}" }
+            p { "{account.license_number}" }
+            if deal_is_some {
+                let deals_vec = deals.unwrap().clone();
+                render!(
+                // expected `Vec<(Deal, Inventory)>`, but found `&Vec<(Deal, Inventory)>`
+            
+            render!(
+            
+            ul {
+            deals_vec.iter().map(|((deal, inventory, lien ), payments)| {
+            let lien = deal.lien.clone();
+            let make = inventory.make.clone();
+            let (state_string, state_class) = match deal.state {
+                0 => ("Closed", "text-gray-400"),
+                1 => ("Active", "text-green-400"),
+                _ => ("Unknown", "text-red-400"),
+            };
+            if let Some(lien) =  lien {
+            render!(
+            li {
+                                            span {
+class: state_class,
+                                            "{state_string}"
+                                            },
+                                             "{lien} {make}" },
+                                        ul {
+            payments.iter().map(|payment| {
+                                                render!(
+                                                li { "{payment.amount} {payment.date}" }
+                                                )
+                                        })
+                                        }
+            )
+            } else {
+            render!(
+            li { "{deal.state}" }
+            )
+            }
+            })
+            }
+            )
+                )
+            } else {
+                render!(
+            
+                p { "No deals" }
+                )
+            }
+        }
+    )
 }

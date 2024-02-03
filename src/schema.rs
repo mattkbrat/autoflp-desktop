@@ -185,6 +185,7 @@ diesel::joinable!(account -> person (contact));
 diesel::joinable!(creditor -> person (contact));
 diesel::joinable!(deal -> account (account));
 diesel::joinable!(deal -> creditor (creditor));
+diesel::joinable!(deal -> inventory (inventory));
 diesel::joinable!(deal_charge -> charge (charge));
 diesel::joinable!(deal_charge -> deal (deal));
 diesel::joinable!(deal_salesman -> deal (deal));
@@ -194,6 +195,7 @@ diesel::joinable!(key -> user (user_id));
 diesel::joinable!(payment -> deal (deal));
 diesel::joinable!(salesman -> person (person));
 diesel::joinable!(session -> user (user_id));
+
 
 diesel::allow_tables_to_appear_in_same_query!(
     account,

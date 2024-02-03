@@ -48,8 +48,9 @@ pub struct Creditor {
     pub apr: String,
 }
 
-#[derive(Queryable, Debug, Selectable)]
+#[derive(Queryable, Identifiable, Associations, Selectable, PartialEq, Debug)]
 #[diesel(table_name = deal)]
+#[diesel(belongs_to(Inventory, foreign_key = inventory))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Deal {
     pub id: String,
@@ -110,7 +111,7 @@ pub struct DefaultCharge {
     pub charge: String,
 }
 
-#[derive(Queryable, Debug, Selectable)]
+#[derive(Queryable, Identifiable, Selectable, PartialEq, Debug)]
 #[diesel(table_name = inventory)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Inventory {
@@ -142,8 +143,9 @@ pub struct Key {
     pub user_id: String,
 }
 
-#[derive(Queryable, Debug, Selectable)]
+#[derive(Queryable, Debug, Selectable, Associations, PartialEq, Identifiable)]
 #[diesel(table_name = payment)]
+#[diesel(belongs_to(Deal, foreign_key = deal))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Payment {
     pub id: String,
