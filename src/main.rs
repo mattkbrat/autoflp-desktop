@@ -2,12 +2,14 @@
 
 // dx serve --hot-reload --platform desktop
 
+pub mod lib;
+
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 
-use autoflp_desktop::{finance, get_account_details, get_account_people};
-use autoflp_desktop::models::Account;
-use finance::add;
+use lib::database::account::{get_account_details, get_account_people};
+use lib::database::models::Account;
+use lib::finance::add;
 
 type People = Vec<[String; 2]>;
 

@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
-    use crate::finance::DateLogic;
-    use crate::finance::next_payment_date::{add_months, get_next_payment_date, months_between_dates};
+    use crate::lib::finance::DateLogic;
+    use crate::lib::finance::next_payment_date::{add_months, get_next_payment_date, months_between_dates};
 
     #[test]
     fn test_date_plus_months() {

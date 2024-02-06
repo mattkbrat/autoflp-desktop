@@ -1,23 +1,11 @@
-pub mod finance;
-pub mod models;
-pub mod schema;
 
-use crate::models::{Account, Creditor, Deal, Inventory, Payment, Person};
-use crate::schema::deal::{account as dealAccount, lien, state};
-use crate::schema::inventory::{make, model, vin};
-use crate::schema::person::{first_name, id as personId, last_name};
-use crate::schema::{account, creditor, deal, inventory, payment, person};
+use crate::lib::database::models::{Account, Creditor, Deal, Inventory, Payment, Person};
+use crate::lib::database::schema::deal::account as dealAccount;
+use crate::lib::database::schema::person::{first_name, id as personId, last_name};
+use crate::lib::database::schema::{account, creditor, deal, inventory, person};
+
 use diesel::prelude::*;
-use dotenvy::dotenv;
-use std::env;
-
-pub fn establish_connection() -> SqliteConnection {
-    dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
-}
+use crate::lib::database;
 
 pub fn get_account(person_id: Option<&String>) -> Option<(Person, Account)> {
     if person_id.is_none() {
@@ -30,7 +18,7 @@ pub fn get_account(person_id: Option<&String>) -> Option<(Person, Account)> {
         return None;
     }
 
-    let mut conn = establish_connection();
+    let mut conn = database::establish_connection();
 
     let selected_person = account::table
         .inner_join(person::table)
@@ -42,7 +30,7 @@ pub fn get_account(person_id: Option<&String>) -> Option<(Person, Account)> {
 }
 
 pub fn get_people() -> Vec<(String, String, String)> {
-    let mut conn = establish_connection();
+    let mut conn = database::establish_connection();
 
     let all_names = person::table
         .select((last_name, first_name, personId))
@@ -54,7 +42,7 @@ pub fn get_people() -> Vec<(String, String, String)> {
 }
 
 pub fn get_account_people() -> Vec<(String, String, String)> {
-    let mut conn = establish_connection();
+    let mut conn = database::establish_connection();
 
     let all_names = person::table
         .inner_join(account::table)
@@ -67,7 +55,7 @@ pub fn get_account_people() -> Vec<(String, String, String)> {
 }
 
 pub fn get_account_deals(account_id: Option<&String>) -> Option<Vec<(Deal, Inventory)>> {
-    let mut conn = establish_connection();
+    let mut conn = database::establish_connection();
     if account_id.is_none() {
         println!("No account id");
         return None;
@@ -139,7 +127,7 @@ pub fn get_account_details(person_id: Option<String>) -> AccountDetails {
 
     let this_id = person_id.unwrap();
 
-    let mut conn = establish_connection();
+    let mut conn = database::establish_connection();
 
     let account = get_account(Some(&this_id));
 
@@ -217,13 +205,8 @@ pub fn get_account_details(person_id: Option<String>) -> AccountDetails {
 
 #[cfg(test)]
 mod tests {
-    use diesel::prelude::*;
-    use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
-
-    use crate::models::{Creditor, Deal, Inventory};
-    use crate::schema::deal::{account as dealAccount, lien, state};
-    use crate::schema::{account, creditor, deal, inventory};
-    use crate::{establish_connection, get_account_details};
+    use crate::lib::database::{establish_connection, account};
+    use account::get_account_details;
 
     #[test]
     fn test_deal_account_inventory() {
@@ -236,3 +219,4 @@ mod tests {
     }
 }
 
+fn main() {}

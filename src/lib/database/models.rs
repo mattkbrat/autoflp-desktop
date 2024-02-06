@@ -3,8 +3,7 @@
 #![allow(unused)]
 #![allow(clippy::all)]
 use diesel::prelude::*;
-use crate::schema::account;
-use super::schema::*;
+use crate::lib::database::schema::*;
 
 #[derive(Queryable, Identifiable, Associations, Selectable, PartialEq, Debug)]
 #[diesel(table_name = account)]

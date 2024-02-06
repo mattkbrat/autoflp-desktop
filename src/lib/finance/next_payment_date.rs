@@ -1,7 +1,7 @@
 use chrono::{Datelike, NaiveDate, Utc};
 use chronoutil::RelativeDuration;
 
-use crate::finance::DateLogic;
+use crate::lib::finance::DateLogic;
 
 pub fn get_days_from_month(year: i32, month: u32) -> Option<u32> {
     let since = NaiveDate::from_ymd_opt(year, month, 1);
