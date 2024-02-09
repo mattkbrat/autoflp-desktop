@@ -9,7 +9,7 @@ html {
 button,
 input,
 textarea {
-    @apply bg-blue-500 text-white border-none rounded-lg;
+    @apply bg-blue-500 text-white border-none rounded-lg px-2 py-1;
 }
 
 select {

@@ -1,11 +1,9 @@
-use crate::lib::database::{establish_connection, account,models,deal};
-use account::get_account;
+use crate::lib::database::{establish_connection, models, deal};
 use models::{Account, Person};
 use deal::{get_deals_by_account};
 use get_deals_by_account::{get_deals_by_account};
 use crate::lib::database::account::get_account::get_account;
 use crate::lib::database::deal::DealsByAccount;
-use crate::lib::database::models::Deal;
 
 pub fn get_account_details(account_id: Option<String>) -> Option<(Person, Account, DealsByAccount)> {
     let mut conn = establish_connection();

@@ -1,7 +1,5 @@
-use diesel::{BelongingToDsl, ExpressionMethods, JoinOnDsl, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection};
-use diesel::query_dsl::InternalJoinDsl;
-use crate::lib::database::deal::{DealByAccount, DealsByAccount};
-use crate::lib::database::models::{Account, Deal};
+use diesel::{ExpressionMethods, JoinOnDsl, QueryDsl, RunQueryDsl, SqliteConnection};
+use crate::lib::database::deal::DealsByAccount;
 use crate::lib::database::schema::{deal, inventory};
 
 

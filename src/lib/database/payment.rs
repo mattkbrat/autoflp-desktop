@@ -1,7 +1,4 @@
-use std::error::Error;
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
-use diesel::sql_types::Bool;
-use dioxus_desktop::tao::platform::unix::x11::ffi::False;
+use diesel::{QueryDsl, RunQueryDsl};
 use crate::lib::database;
 use crate::lib::database::models::{Payment, PaymentForm};
 use crate::lib::database::schema::{payment};

@@ -2,9 +2,9 @@
 
 // dx serve --hot-reload --platform desktop
 
-pub mod lib;
+mod lib;
+mod tests;
 
-use dioxus::html::br;
 use dioxus::html::geometry::euclid::num::Floor;
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
@@ -345,7 +345,7 @@ fn DealViewer(cx: Scope, deal_id: String) -> Element {
 
     let details_ref = deal.as_ref();
 
-    let (deal) = details_ref.unwrap();
+    let deal = details_ref.unwrap();
 
     let (deal, inventory, creditor, payments) = deal;
 
@@ -495,7 +495,7 @@ fn DealList(cx: Scope, id: Option<String>) -> Element {
         to_owned![details, selected_deal];
         async move {
             let deal = details.get().as_ref();
-            if (deal.is_some())  {
+            if deal.is_some()  {
                 let deal = deal.unwrap();
                 let (_, _, deal) = deal;
                 if deal.len() > 0 {
@@ -512,7 +512,7 @@ fn DealList(cx: Scope, id: Option<String>) -> Element {
 
 
 
-    use_effect(cx, (selected_deal, ), |(id, )| {
+    use_effect(cx, (selected_deal, ), |_| {
         to_owned![selected_deal, nav];
         async move {
             let is_empty = selected_deal.read().0.is_empty();

@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use autoflp_desktop::lib::database::{account, establish_connection};
-    use account::get_account_details;
-    use autoflp_desktop::lib::database::account::get_account_details;
+    use crate::lib::database;
+    use database::account::get_account_details;
+    use database::establish_connection;
 
     #[test]
     fn test_deal_account_inventory() {
