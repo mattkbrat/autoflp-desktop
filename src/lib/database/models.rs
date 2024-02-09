@@ -3,6 +3,7 @@
 #![allow(unused)]
 #![allow(clippy::all)]
 use diesel::prelude::*;
+use serde::Deserialize;
 use crate::lib::database::schema::*;
 
 #[derive(Queryable, Identifiable, Associations, Selectable, PartialEq, Debug)]
@@ -142,7 +143,7 @@ pub struct Key {
     pub user_id: String,
 }
 
-#[derive(Queryable, Debug, Selectable, Associations, PartialEq, Identifiable)]
+#[derive(Queryable, Debug, Insertable, Selectable, Associations, PartialEq, Identifiable)]
 #[diesel(table_name = payment)]
 #[diesel(belongs_to(Deal, foreign_key = deal))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -151,6 +152,14 @@ pub struct Payment {
     pub deal: String,
     pub date: String,
     pub amount: String,
+}
+
+#[derive(Deserialize, Insertable, Debug)]
+#[diesel(table_name = payment)]
+pub struct PaymentForm<'a> {
+    pub deal: &'a str,
+    pub date: &'a str,
+    pub amount: &'a str,
 }
 
 #[derive(Queryable, Debug, Selectable, Identifiable, PartialEq)]

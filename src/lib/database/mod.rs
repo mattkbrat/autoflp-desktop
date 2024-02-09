@@ -5,6 +5,8 @@ use std::env;
 pub mod account;
 pub mod models;
 pub mod schema;
+pub mod payment;
+pub mod deal;
 
 pub fn establish_connection() -> SqliteConnection {
     dotenv().ok();

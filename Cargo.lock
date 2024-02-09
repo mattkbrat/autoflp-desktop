@@ -183,7 +183,9 @@ dependencies = [
  "dioxus-router",
  "dotenvy",
  "either",
+ "serde",
  "serde_json",
+ "uuid",
 ]
 
 [[package]]
