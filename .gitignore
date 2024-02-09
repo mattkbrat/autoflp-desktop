@@ -9,3 +9,6 @@
 autoflp_desktop
 /dist
 /public
+
+# js
+node_modules

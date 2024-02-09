@@ -369,9 +369,9 @@ fn DealViewer(cx: Scope, deal_id: String) -> Element {
     };
 
     let (state_string, state_class) = match deal.state {
-        0 => ("Closed", "text-gray-400"),
-        1 => ("Active", "text-green-400"),
-        _ => ("Unknown", "text-red-400"),
+        0 => ("Closed", "text-warning-400"),
+        1 => ("Active", "text-success-400"),
+        _ => ("Unknown", "text-error-400"),
     };
 
     let state_string = String::from(state_string);
@@ -379,15 +379,15 @@ fn DealViewer(cx: Scope, deal_id: String) -> Element {
     render!(
 
         // div {class: "flex flex-row gap-4",
-        div { class: "flex flex-col justify-evenly min-w-1/2 max-w-5/6 bg-gray-700 text-white p-2 gap-4",
+        div { class: "flex flex-col justify-evenly min-w-1/2 max-w-5/6 bg-surface-900 text-surface-200 p-2 gap-4",
             if error_message.len() > 0 {
             render!(p {
-                    class: "text-lg text-red-700 bg-red-200",
+                    class: "text-lg text-error-700 bg-error-200 p-4",
                     "{error_message}"
             
                 })
             }
-            div { class: "flex flex-row gap-4 border-b-2 border-blue-500 pb-4",
+            div { class: "flex flex-row gap-4 border-b-2 border-primary-500 pb-4",
                 span { class: "{state_class} font-bold", "{state_string}" }
                 span { "{lien}" }
                 span { "{make}" }
@@ -430,7 +430,9 @@ fn DealViewer(cx: Scope, deal_id: String) -> Element {
                         value: "{default_payment}",
                         step: "10"
                     }
-                    button { r#type: "submit", "Submit" }
+                    button {
+                            class: "btn-success",
+                            r#type: "submit", "Submit" }
                 })}
                 payments.iter().map(|payment| {
                     render!(
@@ -441,6 +443,7 @@ fn DealViewer(cx: Scope, deal_id: String) -> Element {
                     "{payment.amount}"
                     },
                     button {
+                    class: "btn-warning",
                     r#type: "button",
                     onclick: move |evt| {
                         to_owned![refresh_details, error_message];

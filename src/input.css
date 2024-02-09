@@ -3,13 +3,27 @@
 @tailwind utilities;
 
 html {
-    @apply bg-gray-800 text-white;
+    @apply bg-primary-900 text-primary-200;
 }
 
-button,
+.btn,
+.btn-warning,
+.btn-success,
 input,
 textarea {
-    @apply bg-blue-500 text-white border-none rounded-lg px-2 py-1;
+    @apply bg-surface-800 text-surface-200 text-lg border-none rounded-lg px-2 py-1;
+}
+
+.btn:focus {
+    box-shadow: rgba(50, 50, 93, .1) 0 0 0 1px inset, rgba(50, 50, 93, .2) 0 6px 15px 0, rgba(0, 0, 0, .1) 0 2px 2px 0, rgba(50, 151, 211, .3) 0 0 0 4px;
+}
+
+.btn-warning {
+    @apply bg-warning-900 text-surface-200
+}
+
+.btn-success {
+    @apply bg-success-900 text-surface-200
 }
 
 select {
