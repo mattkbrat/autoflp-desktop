@@ -20,5 +20,9 @@ chronoutil = "0.2.6"
 date_component = "0.4.1"
 serde = { version = "1.0.195", features = ["derive"] }
 uuid = { version = "1.7.0", features = ["v4"] }
+reqwest = "0.11.24"
+
+[dev-dependencies]
+tokio-test = "*"
 
 [n.build-dependencies]
