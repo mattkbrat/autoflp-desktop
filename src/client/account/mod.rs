@@ -56,14 +56,17 @@ pub fn PeopleList(cx: Scope<PeopleProps>) -> Element {
     let selected_deal = use_shared_state::<SelectedDeal>(cx).unwrap();
 
     cx.render(rsx!(
-        label { class: "dark-select",
-            "Select a person"
+        label { class: "text-xl",
+            "Select a person",
             select {
+                class: "!text-black text-lg",
                 onchange: move |event| {
                     selected_person_context.write().0 = event.value.clone();
                     selected_deal.write().0 = String::new();
                 },
-                cx.props.people.iter().map(|[x, y]| rsx!{ option { key: "${&y}", id: "${&x}", value: "{&y}", x.clone() }} )
+                cx.props.people.iter().map(|[x, y]| rsx!{ option {
+                    class: "bg-slate-800 text-white text-lg",
+                    key: "${&y}", id: "${&x}", value: "{&y}", x.clone() }} )
             }
         }
         DealList { id: selected_person_context.read().0.clone() }
