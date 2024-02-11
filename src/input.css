@@ -3,15 +3,22 @@
 @tailwind utilities;
 
 html {
-    @apply bg-primary-900 text-primary-200;
+    @apply bg-primary-900 text-primary-200 text-lg;
 }
 
 .btn,
 .btn-warning,
 .btn-success,
+.btn-primary,
+.btn-secondary,
 input,
 textarea {
-    @apply bg-surface-800 text-surface-200 text-lg border-none rounded-lg px-2 py-1;
+    @apply text-lg border-none rounded-lg px-2 py-1;
+}
+
+input,
+textarea {
+    @apply bg-surface-800 text-surface-200
 }
 
 .btn:focus {
@@ -24,6 +31,14 @@ textarea {
 
 .btn-success {
     @apply bg-success-900 text-surface-200
+}
+
+.btn-primary {
+    @apply bg-primary-900 text-surface-200
+}
+
+.btn-secondary {
+    @apply bg-secondary-900 text-surface-200
 }
 
 table {
