@@ -1,3 +1,9 @@
+
+mod nav_bar;
+mod account;
+mod meta;
+mod inventory;
+
 use dioxus::hooks::use_shared_state_provider;
 use dioxus::prelude::*;
 use dioxus::prelude::render;
@@ -8,13 +14,12 @@ use account::{Account, deal_viewer, People};
 use deal_viewer::DealViewer;
 use meta::{Home, PageNotFound};
 use nav_bar::NavBar;
+use inventory::{InventoryPage};
 
 use crate::lib::database::models::Account;
 use crate::lib::finance::add;
 
-mod nav_bar;
-mod account;
-mod meta;
+
 
 // ANCHOR: router
 #[derive(Routable, Clone)]
@@ -34,6 +39,9 @@ pub enum Route {
     #[end_nest]
     #[route("/finance")]
     FinancePage {},
+
+    #[route("/inventory")]
+    InventoryPage {},
 
     #[end_layout]
     #[route("/:..route")]

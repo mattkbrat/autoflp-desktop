@@ -26,6 +26,9 @@ pub fn NavBar(cx: Scope) -> Element {
                         Link { to: Route::Account {}, "People" }
                     }
                     li {
+                        Link { to: Route::InventoryPage {}, "Inventory" }
+                    }
+                    li {
                         Link { to: Route::FinancePage {}, "Finance" }
                     }
                 }
