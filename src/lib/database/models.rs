@@ -2,6 +2,8 @@
 
 #![allow(unused)]
 #![allow(clippy::all)]
+
+use std::fmt::Debug;
 use diesel::prelude::*;
 use serde::Deserialize;
 use crate::lib::database::schema::*;
@@ -132,6 +134,115 @@ pub struct Inventory {
     pub credit: Option<String>,
     pub down: Option<String>,
     pub state: i32,
+}
+
+#[derive(Deserialize, Insertable, Debug)]
+#[diesel(table_name = inventory)]
+pub(crate) struct SanitizedInventory {
+    pub id: String,
+    pub vin: String,
+    pub year: String,
+    pub make: String,
+    pub model: String,
+    pub body: String,
+    pub color: String,
+    pub fuel: String,
+    pub cwt: String,
+    pub mileage: String,
+    pub cash: String,
+    pub credit: String,
+    pub down: String,
+    pub state: i32,
+}
+
+impl SanitizedInventory {
+    pub(crate) fn default() -> SanitizedInventory {
+        SanitizedInventory {
+            id: String::new(),
+            vin: String::new(),
+            year: String::new(),
+            make: String::new(),
+            model: String::new(),
+            body: String::new(),
+            color: String::new(),
+            fuel: String::new(),
+            cwt: String::new(),
+            mileage: String::new(),
+            cash: "0.0".to_string(),
+            credit: "0.0".to_string(),
+            down: "0.0".to_string(),
+            state: 1,
+        }
+    }
+}
+
+impl Inventory {
+
+
+    pub(crate) fn sanitize(i: Inventory) -> SanitizedInventory {
+        let model = match i.model.to_owned() {
+            Some(x) if x != "none" && x != "null" => x,
+            _ => String::new()
+        };
+
+        let color = match i.color.to_owned() {
+            Some(x) if x != "none" && x != "null" => x,
+            _ => String::new()
+        };
+
+        let mileage = match i.mileage.to_owned() {
+            Some(x) if x != "none" && x != "null" => x,
+            _ => String::new()
+        };
+
+        let fuel = match i.fuel.to_owned() {
+            Some(x) if x != "none" && x != "null" => x,
+            _ => String::new()
+        };
+
+        let cwt = match i.cwt.to_owned() {
+            Some(x) if x != "none" && x != "null" => x,
+            _ => String::new()
+        };
+
+        let cash = match i.cash.to_owned() {
+            Some(x) if x != "none" && x != "null" => x,
+            _ => "0.0".to_string()
+        };
+
+        let credit = match i.credit.to_owned() {
+            Some(x) if x != "none" && x != "null" => x,
+            _ => "0.0".to_string()
+        };
+
+        let down = match i.down.to_owned() {
+            Some(x) if x != "none" && x != "null" => x,
+            _ => "0.0".to_string()
+        };
+
+        let body = match i.body.to_owned() {
+            Some(x) if x != "none" && x != "null" => x,
+            _ => String::new()
+        };
+
+        SanitizedInventory {
+            id: i.id,
+            vin: i.vin,
+            year: i.year,
+            make: i.make,
+            model,
+            body,
+            color,
+            fuel,
+            cwt,
+            mileage,
+            cash,
+            credit,
+            down,
+            state: i.state,
+        }
+        
+    }
 }
 
 #[derive(Queryable, Debug, Selectable)]
