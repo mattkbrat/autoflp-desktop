@@ -7,6 +7,7 @@ pub mod models;
 pub mod schema;
 pub mod payment;
 pub mod deal;
+ pub mod inventory;
 
 pub fn establish_connection() -> SqliteConnection {
     dotenv().ok();
