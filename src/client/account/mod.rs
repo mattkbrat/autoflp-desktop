@@ -1,7 +1,6 @@
 use dioxus::core::{Element, Scope};
 use dioxus::core_macro::component;
 use dioxus::hooks::{use_shared_state, use_shared_state_provider};
-use dioxus::html::geometry::euclid::num::Floor;
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 
@@ -57,7 +56,7 @@ pub fn PeopleList(cx: Scope<PeopleProps>) -> Element {
 
     cx.render(rsx!(
         label { class: "text-xl",
-            "Select a person",
+            "Select a person"
             select {
                 class: "!text-black text-lg",
                 onchange: move |event| {
