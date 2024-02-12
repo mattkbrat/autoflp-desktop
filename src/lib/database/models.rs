@@ -267,10 +267,10 @@ pub struct Payment {
 
 #[derive(Deserialize, Insertable, Debug)]
 #[diesel(table_name = payment)]
-pub struct PaymentForm<'a> {
-    pub deal: &'a str,
-    pub date: &'a str,
-    pub amount: &'a str,
+pub struct PaymentForm {
+    pub deal: String,
+    pub date: String,
+    pub amount: String,
 }
 
 #[derive(Queryable, Debug, Selectable, Identifiable, PartialEq)]

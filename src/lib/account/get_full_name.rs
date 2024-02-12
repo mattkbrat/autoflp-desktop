@@ -53,7 +53,7 @@ pub fn full_name_from_person(person: &PersonName, format: FullNameFormat, titlec
         FullNameFormat::FirstMiddleLastSuffix => format!("{} {} {} {}", first_name, middle_initial, last_name, suffix),
         FullNameFormat::LastFirstMiddleSuffix => format!("{}, {} {} {}", last_name, first_name, middle_initial, suffix),
         FullNameFormat::PrefixFirstMiddleLastSuffix => format!("{} {} {} {} {}", prefix, first_name, middle_initial, last_name, suffix),
-        _ => format!("{} {} {}", first_name, middle_initial, last_name)
+        // _ => format!("{} {} {}", first_name, middle_initial, last_name)
     };
 
     if titlecase {

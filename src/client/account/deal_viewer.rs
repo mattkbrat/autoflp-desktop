@@ -6,10 +6,11 @@ use dioxus::prelude::*;
 
 use deal::get_details::get_deal_details;
 use models::PaymentForm;
-use payment::{add_payment, delete_payment};
+use payment::add_payment;
 
 use crate::client::SelectedDeal;
 use crate::lib::database::{deal, models, payment};
+use crate::lib::database::payment::delete_payment;
 
 #[component]
 pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
@@ -19,6 +20,47 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
     let deal = use_state(cx, || None);
     let refresh_details = use_state(cx, || false);
     let selected_deal = use_shared_state::<SelectedDeal>(cx).unwrap();
+
+    let logged_in = use_state(cx, || false);
+
+    let handle_record_payment = move |pmt: PaymentForm| {
+        cx.spawn({
+            to_owned![refresh_details, error_message, selected_deal];
+            async move {
+            let account_info =    selected_deal.read().0.1.clone();
+            let account_string = SelectedDeal::account_details(&selected_deal.read());
+            let pmt_result = add_payment(pmt, account_string.to_owned()).await;
+            if pmt_result.is_ok() {
+                refresh_details.set(!refresh_details.get());
+                error_message.set(String::new());
+            } else {
+                error_message.set(pmt_result.unwrap_err());
+            }
+            }
+        });
+    };
+
+    let handle_delete_payment = move |id: String| {
+        cx.spawn({
+            to_owned![refresh_details, error_message, selected_deal];
+            async move {
+                let account_info =    selected_deal.read().0.1.clone();
+                let account_string = SelectedDeal::account_details(&selected_deal.read());
+                let result = delete_payment(&id, account_string.to_owned()).await;
+                if result.is_ok() {
+                    // TODO: Add a toast message
+                    // Rust toast package: https://crates.io/crates/toast
+                    println!("Deleted payment");
+                    refresh_details.set(!refresh_details.get());
+                    error_message.set(String::new());
+                } else {
+                    error_message.set(result.unwrap_err());
+                    println!("Error deleting payment");
+                };
+            }
+        });
+    };
+
 
     use_effect(cx, (deal_id, refresh_details), |(deal_id, _, )| {
         to_owned![deal_id, deal];
@@ -32,8 +74,8 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
         }
     });
 
-    if selected_deal.read().0.len() == 0 {
-        return render!( p { "NO DEAL!: {selected_deal.read().0} {deal_id} " } );
+    if selected_deal.read().0.0.len() == 0 {
+        return render!( p { "Select a Deal" } );
     }
 
 
@@ -66,6 +108,8 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
         _ => 0.0
     };
 
+    // let account_string = format!("{:?}", deal.account);
+
     let (state_string, state_class) = match deal.state {
         0 => ("Closed", "text-warning-400"),
         1 => ("Active", "text-success-400"),
@@ -73,6 +117,7 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
     };
 
     let state_string = String::from(state_string);
+    let account_string = SelectedDeal::account_details(&selected_deal.read());
 
     render!(
 
@@ -84,6 +129,10 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
                     "{error_message}"
             
                 })
+            }
+            h2 {
+                class: "text-3xl underline",
+                "{account_string}"
             }
             div { class: "flex flex-row gap-4 border-b-2 border-primary-500 pb-4",
                 span { class: "{state_class} font-bold", "{state_string}" }
@@ -107,17 +156,11 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
                         let amount = &values.get("amount");
                         if let (Some(date), Some(deal_id), Some(amount)) = (date, deal_id, amount) {
                             let pmt = PaymentForm {
-                                amount: &*amount[0].to_string(),
-                                date: &*date[0].clone(),
-                                deal: &*deal_id[0].clone(),
+                                amount: amount[0].to_string(),
+                                date: date[0].clone(),
+                                deal: deal_id[0].clone(),
                             };
-                            let pmt_result = add_payment(&pmt);
-                            if pmt_result.is_ok() {
-                                refresh_details.set(!refresh_details.get());
-                                error_message.set(String::new());
-                            } else {
-                                error_message.set(pmt_result.unwrap_err());
-                            }
+                            handle_record_payment(pmt);
                         }
                     },
                     input { name: "id", class: "hidden", r#type: "id", value: "{deal.id}" }
@@ -143,19 +186,8 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
                     button {
                     class: "btn-warning",
                     r#type: "button",
-                    onclick: move |evt| {
-                        to_owned![refresh_details, error_message];
-                        let result = delete_payment(&payment.id);
-                        if result.is_ok() {
-                            // TODO: Add a toast message
-                            // Rust toast package: https://crates.io/crates/toast
-                            println!("Deleted payment");
-                            refresh_details.set(!refresh_details.get());
-                            error_message.set(String::new());
-                        } else {
-                            error_message.set(result.unwrap_err());
-                            println!("Error deleting payment");
-                        }
+                    onclick: move |_| {
+                        handle_delete_payment(payment.id.clone());
                     },
                     "Delete"
                     }

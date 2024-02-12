@@ -52,7 +52,7 @@ pub enum Route {
 
 #[component]
 pub fn App(cx: Scope) -> Element {
-    use_shared_state_provider(cx, || SelectedDeal("".to_string()));
+    use_shared_state_provider(cx, || SelectedDeal::default());
 
     render! { Router::<Route> {} }
 }
@@ -67,7 +67,22 @@ pub struct PeopleProps {
 
 pub struct SelectedPerson(String);
 
-pub struct SelectedDeal(String);
+// deal.id, (full_name, inventory_string)
+pub struct SelectedDeal((String, (String, String)));
+
+impl Default for SelectedDeal {
+    // call with `SelectedDeal::default()`
+    fn default() -> Self {
+        SelectedDeal((String::new(), (String::new(), String::new())))
+    }
+}
+
+impl SelectedDeal {
+    // call with `SelectedDeal::account_details()`
+    pub fn account_details(&self) -> String {
+        format!("{} ({})", self.0.1.0, self.0.1.1).to_uppercase()
+    }
+}
 
 pub struct SelectedAccount(Option<Account>);
 

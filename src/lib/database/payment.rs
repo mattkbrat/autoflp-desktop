@@ -3,8 +3,10 @@ use crate::lib::database;
 use crate::lib::database::models::{Payment, PaymentForm};
 use crate::lib::database::schema::{payment};
 use uuid::Uuid;
+use crate::lib::pushover::{notify_payment, PaymentMessage};
+use crate::lib::pushover::message::TransactionType;
 
-pub fn add_payment(new_payment_data: &PaymentForm) -> Result<i32, String> {
+pub async fn add_payment(new_payment_data: PaymentForm, account: String) -> Result<i32, String> {
 
     let mut conn = database::establish_connection();
 
@@ -25,6 +27,18 @@ pub fn add_payment(new_payment_data: &PaymentForm) -> Result<i32, String> {
 
     if new_payment.is_ok() {
         println!("{} new payment inserted", new_payment.unwrap());
+
+        let amount = new_payment_data.amount.parse().unwrap();
+
+        notify_payment(
+            PaymentMessage {
+                amount,
+                currency: String::from("$"),
+                account: String::from(account),
+            },
+            TransactionType::New
+        ).await.unwrap();
+
         return Ok(200);
     }
 
@@ -36,7 +50,7 @@ pub fn add_payment(new_payment_data: &PaymentForm) -> Result<i32, String> {
 pub fn get_payments() -> Vec<Payment> {
     let mut conn = database::establish_connection();
 
-    database::schema::payment::table
+    payment::table
         .load::<Payment>(&mut conn)
         .expect("Error loading payments")
 }
@@ -54,14 +68,35 @@ pub fn get_payment(payment_id: &str) -> Option<Payment> {
     }
 }
 
-pub fn delete_payment(payment_id: &str) -> Result<i32, String> {
+pub async fn delete_payment(payment_id: &str, account: String) -> Result<i32, String> {
     let mut conn = database::establish_connection();
 
-    let deleted_payment = diesel::delete(database::schema::payment::table.find(payment_id))
+
+    // sqlite does not support returning clause :(
+
+    let this_payment = payment::table.find(payment_id)
+        .first::<Payment>(&mut conn);
+
+    let deleted_payment = diesel::delete(
+        payment::table.find(payment_id)
+    )
         .execute(&mut conn);
 
     if deleted_payment.is_ok() {
-        println!("{} payment deleted", deleted_payment.unwrap());
+        let payment = this_payment.unwrap();
+        println!("{:?} payment deleted", payment );
+
+        let amount = payment.amount.parse().unwrap();
+
+        notify_payment(
+            PaymentMessage {
+                amount,
+                currency: String::from("$"),
+                account: String::from(account),
+            },
+            TransactionType::Delete
+        ).await.unwrap();
+
         return Ok(200);
     }
 

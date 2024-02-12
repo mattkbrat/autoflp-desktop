@@ -1,6 +1,11 @@
 use crate::lib::pushover::priority::Priority;
 use crate::lib::pushover::sounds::Sound;
 
+pub enum TransactionType {
+    New,
+    Delete
+}
+
 #[derive(Debug)]
 pub struct NewMessage {
     pub token: String,

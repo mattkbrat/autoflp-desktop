@@ -3,7 +3,10 @@ use dioxus_router::prelude::*;
 
 use crate::client::{Route, SelectedDeal};
 use crate::client::account::NewProfile;
+use crate::lib::account::get_full_name::full_name_from_person;
+use crate::lib::account::get_full_name::FullNameFormat::LastFirstMiddleSuffix;
 use crate::lib::database::account::get_account_details::get_account_details;
+use crate::lib::database::models::PersonName;
 
 #[component]
 pub fn DealList(cx: Scope, id: Option<String>) -> Element {
@@ -36,24 +39,49 @@ pub fn DealList(cx: Scope, id: Option<String>) -> Element {
             let deal = details.get().as_ref();
             if deal.is_some() {
                 let deal = deal.unwrap();
-                let (_, _, deal) = deal;
+                let (person, _, deal) = deal;
                 if deal.len() > 0 {
-                    let deal_id = deal[0].0.clone();
-                    if selected_deal.read().0 != deal_id {
-                        selected_deal.write().0 = deal_id;
+                    let first_deal = &deal[0];
+                    let deal_id = first_deal.0.clone();
+                    if selected_deal.read().0.0 != deal_id {
+
+                        let name = PersonName {
+                            first_name: person.first_name.to_string(),
+                            last_name: person.last_name.to_string(),
+                            middle_initial: person.middle_initial.clone(),
+                            name_prefix: None,
+                            name_suffix: person.name_suffix.clone(),
+                        };
+
+                        let full_name = full_name_from_person(&name, LastFirstMiddleSuffix, true);
+
+                        // println!("{:?} {:?}", full_name, first_deal);
+
+                        selected_deal.write().0 = (deal_id, (full_name, first_deal.2.clone()));
                     }
                 }
             }
         }
     });
 
+    // let (person, account, deals) = use_memo(cx,  (details,), |(details,)| {
+    //     to_owned![details];
+    //     // async move {
+    //     //         let details = details.get().as_ref();
+    //     //         details.unwrap().clone()
+    //     //     }
+    //
+    //     details.get().as_ref().clone().unwrap()
+    //
+    // });
+
 
     use_effect(cx, (selected_deal, ), |_| {
         to_owned![selected_deal, nav];
         async move {
-            let is_empty = selected_deal.read().0.is_empty();
+            let is_empty = selected_deal.read().0.0.is_empty();
             let route = match is_empty {
-                false => Route::DealViewer { deal_id: selected_deal.read().0.clone() },
+                false => Route::DealViewer { deal_id: selected_deal.read().0.0.clone() },
                 _ => Route::Account {}
             };
 
@@ -74,12 +102,13 @@ pub fn DealList(cx: Scope, id: Option<String>) -> Element {
     let (person, account, deals) = details_ref.unwrap();
 
 
+
     render!(
         div { class: "flex flex-row gap-4 items-center h-min",
             deals.into_iter().map(|deal| {
                 to_owned![deal];
                 let this_deal = deal.0;
-                let tab_class = match this_deal.eq(&selected_deal.read().0) {
+                let tab_class = match this_deal.eq(&selected_deal.read().0.0) {
                 true => "underline",
                     false => ""
                 };
@@ -87,7 +116,7 @@ pub fn DealList(cx: Scope, id: Option<String>) -> Element {
                 class: "{tab_class} flex flex-col gap-4 items-center",
                 onclick: move |_| {
                         let this_deal = this_deal.clone();
-                        selected_deal.write().0 = this_deal.clone();
+                        selected_deal.write().0 = (this_deal.clone(), (String::new(), String::new()));
                     },
                 span{
                     "{deal.1}"

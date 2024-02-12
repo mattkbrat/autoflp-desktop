@@ -9,7 +9,9 @@ use account::get_account_people::get_account_people;
 use crate::client;
 use crate::client::{PeopleProps, Route, SelectedAccount, SelectedDeal, SelectedPerson};
 use crate::client::account::deal_list::DealList;
+use crate::lib::account::get_full_name::{full_name_from_person, FullNameFormat};
 use crate::lib::database::account;
+use crate::lib::database::models::PersonName;
 
 pub mod deal_viewer;
 pub mod deal_list;
@@ -21,10 +23,16 @@ pub fn AccountPage(cx: Scope) -> Element {
     use_shared_state_provider(cx, || SelectedAccount(None));
 
     let mut names = people.iter().map(|x| {
-        let first = (&x.0).to_string();
-        let last = &x.1;
+        let last = (&x.0).to_string();
+        let first = (&x.1).to_string();
 
-        let full_name = (first + ", " + last).trim().to_uppercase();
+        let full_name = full_name_from_person(&PersonName {
+            first_name: first,
+            last_name: last,
+            middle_initial: None,
+            name_prefix: None,
+            name_suffix: None,
+        }, FullNameFormat::LastFirstMiddleSuffix, true);
 
         [full_name, (&x.2).to_string()]
     }).collect::<client::People>();
@@ -61,7 +69,7 @@ pub fn PeopleList(cx: Scope<PeopleProps>) -> Element {
                 class: "!text-black text-lg",
                 onchange: move |event| {
                     selected_person_context.write().0 = event.value.clone();
-                    selected_deal.write().0 = String::new();
+                    selected_deal.write().0 = SelectedDeal::default().0;
                 },
                 cx.props.people.iter().map(|[x, y]| rsx!{ option {
                     class: "bg-slate-800 text-white text-lg",
