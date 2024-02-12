@@ -298,6 +298,16 @@ pub struct Person {
     pub email_secondary: Option<String>,
 }
 
+#[derive(Deserialize, Insertable, Debug)]
+#[diesel(table_name = person)]
+pub struct PersonName {
+    pub name_prefix: Option<String>,
+    pub first_name: String,
+    pub middle_initial: Option<String>,
+    pub last_name: String,
+    pub name_suffix: Option<String>,
+}
+
 #[derive(Queryable, Debug, Selectable)]
 #[diesel(table_name = salesman)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
