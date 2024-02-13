@@ -26,8 +26,6 @@ pub async fn add_payment(new_payment_data: PaymentForm, account: String) -> Resu
 
 
     if new_payment.is_ok() {
-        println!("{} new payment inserted", new_payment.unwrap());
-
         let amount = new_payment_data.amount.parse().unwrap();
 
         notify_payment(
@@ -84,8 +82,6 @@ pub async fn delete_payment(payment_id: &str, account: String) -> Result<i32, St
 
     if deleted_payment.is_ok() {
         let payment = this_payment.unwrap();
-        println!("{:?} payment deleted", payment );
-
         let amount = payment.amount.parse().unwrap();
 
         notify_payment(

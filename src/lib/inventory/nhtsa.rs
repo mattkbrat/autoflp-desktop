@@ -33,8 +33,6 @@ pub async fn fetch_nhtsa(vin: String) -> Result<Vec<Value>, String> {
 }
 
 pub fn format_nhtsa(value: Vec<Value>) -> Result<NHTSALookup, String> {
-    println!("{:?}", value);
-
     let mut vehicle = HashMap::new();
 
     for item in value {
@@ -43,7 +41,6 @@ pub fn format_nhtsa(value: Vec<Value>) -> Result<NHTSALookup, String> {
 
         if let Some(variable) = variable {
             if let Some(value) = value {
-                println!("{}: {}", variable, value);
                 vehicle.insert(variable.to_string(), value.to_string().to_uppercase());
             } else {
                 vehicle.insert(variable.to_string(), "".to_string());

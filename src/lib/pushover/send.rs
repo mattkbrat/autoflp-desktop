@@ -18,11 +18,7 @@ pub(crate) async fn send_message(message: NewMessage) -> Result<i32, String> {
     let user = env::var("PUSHOVER_USER").expect("PUSHOVER_USER must be set");
     let client = reqwest::Client::new();
 
-    println!("user: {}", user);
-
     let mut form = std::collections::HashMap::new();
-
-    println!("Sending message {:#?}", message);
 
     form.insert("token", token);
     form.insert("user", user);
@@ -78,8 +74,6 @@ pub(crate) async fn send_message(message: NewMessage) -> Result<i32, String> {
         form.insert("callback", message.callback.unwrap());
     }
 
-    println!("Form: {:#?}", form);
-
     let url = Url::parse("https://api.pushover.net/1/messages.json").expect("Invalid URL");
 
     let response = client.post(url.as_str()).form(&form).send();
@@ -87,7 +81,6 @@ pub(crate) async fn send_message(message: NewMessage) -> Result<i32, String> {
     let response = match response.await {
         Ok(r) => {
             if r.status().is_success() {
-                println!("Message sent");
                 Ok(200)
             } else {
                 println!("Not success: {} {:?}", r.status(), r.text().await);
