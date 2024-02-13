@@ -47,5 +47,31 @@ table {
 
 td,
 th {
-    @apply px-3 py-2;
+    @apply px-6 py-2;
+}
+
+.tabs {
+    @apply flex flex-row w-full bg-surface-700 border-b-2 border-surface-800 cursor-pointer select-none;
+}
+
+.tabs div
+{
+    @apply px-4 py-2 border-b-2;
+}
+
+.tabs .selected {
+    @apply bg-surface-800 text-surface-200 border-primary-200;
+}
+
+.tabs div:not(.selected) {
+    @apply text-surface-900 border-transparent;
+}
+
+.tabs div:not(.selected):hover {
+    @apply bg-surface-800 text-surface-200;
+}
+
+
+.error {
+    @apply text-error-500 bg-error-200 p-2 rounded-lg flex gap-4 justify-between items-center border-2 border-error-500;
 }
