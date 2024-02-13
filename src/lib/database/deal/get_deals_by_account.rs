@@ -8,8 +8,9 @@ pub fn get_deals_by_account(account: &String, conn: &mut SqliteConnection) -> De
     let deals = deal::table
         .filter(deal::account.eq(account))
         .inner_join(inventory::table.on(inventory::vin.eq(deal::inventory)))
-        .select((deal::id, deal::date, inventory::make))
-        .order_by(deal::date.desc())
+        .select((deal::id, deal::date, inventory::make, deal::state))
+        .order_by(deal::state.desc())
+        .then_order_by(deal::date.desc())
         .load(conn)
         .unwrap()
         ;

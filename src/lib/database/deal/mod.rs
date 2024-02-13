@@ -8,5 +8,5 @@ pub type AccountDeal = (Deal, Inventory, Option<Creditor>);
 pub type AccountDeals = Vec<AccountDeal>;
 pub type DealDetails = (Deal, Inventory, Option<Creditor>);
 pub type PaymentsByDeal = (Deal, Inventory, Option<Creditor>, Vec<Payment>);
-pub type DealByAccount = (String, String, String);
+pub type DealByAccount = (String, String, String, i32);
 pub type DealsByAccount = Vec<DealByAccount>;
