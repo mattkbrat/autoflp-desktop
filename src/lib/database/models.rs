@@ -8,7 +8,7 @@ use diesel::prelude::*;
 use serde::Deserialize;
 use crate::lib::database::schema::*;
 
-#[derive(Queryable, Identifiable, Associations, Selectable, PartialEq, Debug)]
+#[derive(Queryable, Identifiable, Associations, Selectable, PartialEq, Debug, Clone)]
 #[diesel(table_name = account)]
 #[diesel(belongs_to(Person, foreign_key = contact))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -25,6 +25,22 @@ pub struct Account {
     pub notes: Option<String>,
 }
 
+impl Default for Account {
+    fn default() -> Self {
+        Account {
+            id: String::new(),
+            contact: String::new(),
+            cosigner: None,
+            date_of_birth: None,
+            license_number: String::new(),
+            license_expiration: None,
+            date_added: None,
+            date_modified: None,
+            current_standing: None,
+            notes: None,
+        }
+    }
+}
 
 
 #[derive(Queryable, Debug, Selectable)]
@@ -273,7 +289,7 @@ pub struct PaymentForm {
     pub amount: String,
 }
 
-#[derive(Queryable, Debug, Selectable, Identifiable, PartialEq)]
+#[derive(Queryable, Insertable, AsChangeset, Debug, Selectable, Identifiable, PartialEq, Clone)]
 #[diesel(table_name = person)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Person {
@@ -296,6 +312,82 @@ pub struct Person {
     pub phone_tertiary: Option<String>,
     pub email_primary: Option<String>,
     pub email_secondary: Option<String>,
+}
+
+#[derive(Deserialize, Identifiable, Insertable, AsChangeset, Debug, PartialEq, Selectable, Clone)]
+#[diesel(table_name = person)]
+pub struct PersonForm {
+    pub id: String,
+    pub name_prefix: String,
+    pub first_name: String,
+    pub middle_initial: String,
+    pub last_name: String,
+    pub name_suffix: String,
+    pub address_1: String,
+    pub address_2: String,
+    pub address_3: String,
+    pub city: String,
+    pub state_province: String,
+    pub zip_postal: String,
+    pub zip_4: String,
+    pub country: String,
+    pub phone_primary: String,
+    pub phone_secondary: String,
+    pub phone_tertiary: String,
+    pub email_primary: String,
+    pub email_secondary: String,
+}
+
+impl PersonForm {
+    pub fn to_person(self) -> Person {
+        Person {
+            id: self.id,
+            name_prefix: Some(self.name_prefix),
+            first_name: self.first_name,
+            middle_initial: Some(self.middle_initial),
+            last_name: self.last_name,
+            name_suffix: Some(self.name_suffix),
+            address_1: self.address_1,
+            address_2: Some(self.address_2),
+            address_3: Some(self.address_3),
+            city: self.city,
+            state_province: self.state_province,
+            zip_postal: self.zip_postal,
+            zip_4: Some(self.zip_4),
+            country: self.country,
+            phone_primary: self.phone_primary,
+            phone_secondary: Some(self.phone_secondary),
+            phone_tertiary: Some(self.phone_tertiary),
+            email_primary: Some(self.email_primary),
+            email_secondary: Some(self.email_secondary),
+        }
+    }
+}
+
+impl Default for Person {
+    fn default() -> Self {
+        Person {
+            id: String::new(),
+            name_prefix: None,
+            first_name: String::new(),
+            middle_initial: None,
+            last_name: String::new(),
+            name_suffix: None,
+            address_1: String::new(),
+            address_2: None,
+            address_3: None,
+            city: String::new(),
+            state_province: String::new(),
+            zip_postal: String::new(),
+            zip_4: None,
+            country: String::new(),
+            phone_primary: String::new(),
+            phone_secondary: None,
+            phone_tertiary: None,
+            email_primary: None,
+            email_secondary: None,
+        }
+    }
 }
 
 #[derive(Deserialize, Insertable, Debug)]
