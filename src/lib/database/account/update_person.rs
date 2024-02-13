@@ -1,6 +1,6 @@
 use diesel::RunQueryDsl;
 use crate::lib::database;
-use crate::lib::database::models::{Person, PersonForm};
+use crate::lib::database::models::PersonForm;
 
 
 pub async fn update_details(person: PersonForm) -> Result<i32, String> {

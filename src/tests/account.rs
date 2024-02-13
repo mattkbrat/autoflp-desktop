@@ -10,7 +10,14 @@ mod tests {
     use account::update_person::update_details;
     use models::Person;
     use schema::person;
+    use crate::lib::database::models::PersonForm;
+    use tokio_test::block_on;
 
+    macro_rules! aw {
+    ($e:expr) => {
+        block_on($e)
+    };
+  }
     #[test]
     fn test_deal_account_inventory() {
         let mut conn = establish_connection();
@@ -25,26 +32,26 @@ mod tests {
     fn test_update_person() {
         let mut conn = establish_connection();
 
-        let mut new_person = Person {
+        let mut new_person = PersonForm {
             id: "123".to_string(),
             first_name: "John".to_string(),
             last_name: "Doe".to_string(),
-            middle_initial: Some("A".to_string()),
-            name_prefix: Some("Mr.".to_string()),
-            name_suffix: Some("III".to_string()),
+            middle_initial: "A".to_string(),
+            name_prefix: "Mr".to_string(),
+            name_suffix: "Jr".to_string(),
             address_1: "".to_string(),
-            address_2: None,
-            address_3: None,
+            address_2: "".to_string(), // "Apt. 123",
+            address_3: "".to_string(), // "Suite 456",
             city: "".to_string(),
             state_province: "".to_string(),
             zip_postal: "".to_string(),
-            zip_4: None,
+            zip_4: "".to_string(),
             country: "".to_string(),
             phone_primary: "".to_string(),
-            phone_secondary: None,
-            phone_tertiary: None,
-            email_primary: None,
-            email_secondary: None,
+            phone_secondary: "".to_string(),
+            phone_tertiary: "".to_string(),
+            email_primary: "".to_string(),
+            email_secondary: "".to_string(),
         };
 
         let inserted = diesel::insert_into(person::table).values(&new_person).execute(&mut conn);
@@ -55,7 +62,7 @@ mod tests {
 
         new_person.address_1 = new_address.clone();
 
-        let updated = update_details(&new_person);
+        let updated = aw!(update_details(new_person.clone()));
 
         assert!(updated.is_ok());
 
