@@ -1,14 +1,13 @@
 use dioxus::core::{Element, Scope};
 use dioxus::core_macro::component;
 use dioxus::hooks::{to_owned, use_effect, use_shared_state, use_state};
-use dioxus::html::geometry::euclid::num::Floor;
 use dioxus::prelude::*;
 
 use deal::get_details::get_deal_details;
 use models::PaymentForm;
 use payment::add_payment;
 
-use crate::client::SelectedDeal;
+use crate::client::{Error, SelectedAccount, SelectedDeal};
 use crate::lib::database::{deal, models, payment};
 use crate::lib::database::payment::delete_payment;
 
@@ -16,25 +15,27 @@ use crate::lib::database::payment::delete_payment;
 pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
 
     // let deal = use_state(cx, || None);
-    let error_message = use_state(cx, || "".to_string());
     let deal = use_state(cx, || None);
     let refresh_details = use_state(cx, || false);
     let selected_deal = use_shared_state::<SelectedDeal>(cx).unwrap();
+    let selected_account = use_shared_state::<SelectedAccount>(cx).unwrap();
+    let error = use_shared_state::<Error>(cx).unwrap();
 
     let logged_in = use_state(cx, || false);
 
     let handle_record_payment = move |pmt: PaymentForm| {
         cx.spawn({
-            to_owned![refresh_details, error_message, selected_deal];
+            to_owned![refresh_details, error, selected_deal, selected_account];
             async move {
-            let account_info =    selected_deal.read().0.1.clone();
-            let account_string = SelectedDeal::account_details(&selected_deal.read());
+            let account_string = SelectedAccount::details(selected_account.read().clone());
             let pmt_result = add_payment(pmt, account_string.to_owned()).await;
             if pmt_result.is_ok() {
                 refresh_details.set(!refresh_details.get());
-                error_message.set(String::new());
+                error.write().code = 0;
             } else {
-                error_message.set(pmt_result.unwrap_err());
+                // error_message.set(pmt_result.unwrap_err());
+                error.write().code = 5001;
+                error.write().message = pmt_result.unwrap_err();
             }
             }
         });
@@ -42,30 +43,29 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
 
     let handle_delete_payment = move |id: String| {
         cx.spawn({
-            to_owned![refresh_details, error_message, selected_deal];
+            to_owned![refresh_details, error, selected_deal, selected_account];
             async move {
-                let account_info =    selected_deal.read().0.1.clone();
-                let account_string = SelectedDeal::account_details(&selected_deal.read());
+                let account_string = SelectedAccount::details(selected_account.read().clone());
                 let result = delete_payment(&id, account_string.to_owned()).await;
                 if result.is_ok() {
-                    // TODO: Add a toast message
-                    // Rust toast package: https://crates.io/crates/toast
-                    println!("Deleted payment");
                     refresh_details.set(!refresh_details.get());
-                    error_message.set(String::new());
+                    // error_message.set(String::new());
+                    error.write().code = 0;
                 } else {
-                    error_message.set(result.unwrap_err());
-                    println!("Error deleting payment");
+                    // error_message.set(result.unwrap_err());
+                    // println!("Error deleting payment");
+                    error.write().code = 5002;
+                    error.write().message = result.unwrap_err();
                 };
             }
         });
     };
 
 
-    use_effect(cx, (deal_id, refresh_details), |(deal_id, _, )| {
-        to_owned![deal_id, deal];
+    use_effect(cx, (selected_deal, refresh_details), |(selected_deal, _, )| {
+        to_owned![deal, deal_id];
         async move {
-            let deal_details = get_deal_details(Some(deal_id));
+            let deal_details = get_deal_details(Some(selected_deal.read().id.clone()));
             if let Some(deal_details) = deal_details {
                 deal.set(Some(deal_details));
             } else {
@@ -74,7 +74,7 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
         }
     });
 
-    if selected_deal.read().0.0.len() == 0 {
+    if selected_deal.read().id.len() == 0 {
         return render!( p { "Select a Deal" } );
     }
 
@@ -117,23 +117,14 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
     };
 
     let state_string = String::from(state_string);
-    let account_string = SelectedDeal::account_details(&selected_deal.read());
+    let account_string = SelectedAccount::details(selected_account.read().clone());
+    let inventory_string = SelectedDeal::details(selected_deal.read().clone());
 
     render!(
 
         // div {class: "flex flex-row gap-4",
         div { class: "flex flex-col justify-evenly min-w-1/2 max-w-5/6 bg-surface-900 text-surface-200 p-2 gap-4",
-            if error_message.len() > 0 {
-            render!(p {
-                    class: "text-lg text-error-700 bg-error-200 p-4",
-                    "{error_message}"
-            
-                })
-            }
-            h2 {
-                class: "text-3xl underline",
-                "{account_string}"
-            }
+            h2 { class: "text-3xl underline", "{account_string} {inventory_string}" }
             div { class: "flex flex-row gap-4 border-b-2 border-primary-500 pb-4",
                 span { class: "{state_class} font-bold", "{state_string}" }
                 span { "{lien}" }

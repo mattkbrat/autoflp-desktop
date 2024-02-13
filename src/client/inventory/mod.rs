@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 
 use inventory::get_inventory_by_id::get_inventory_by_id;
+use crate::client::Error;
 
 use crate::lib::database::inventory;
 use crate::lib::database::inventory::get_inventory::get_inventory;
@@ -17,6 +18,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
     let selected_inventory = use_state(cx, || SanitizedInventory::default());
     let inventory_state = use_state(cx, || 1);
     let formatted = use_state(cx, || String::new());
+    let error = use_shared_state::<Error>(cx).unwrap();
 
 
     use_effect(cx, inventory_state, |state| {
@@ -121,6 +123,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
                 let values = &event.data.values;
                 let deal_id = &values.get("id");
                 println!("{:?}", values);
+                // TODO: Submit the form
             },
             label { class: "flex flex-col uppercase",
                 "VIN"
