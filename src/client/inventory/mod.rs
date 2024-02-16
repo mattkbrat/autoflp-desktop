@@ -123,7 +123,6 @@ pub fn InventoryPage(cx: Scope) -> Element {
                 let values = &event.data.values;
                 let deal_id = &values.get("id");
                 println!("{:?}", values);
-                // TODO: Submit the form
             },
             label { class: "flex flex-col uppercase",
                 "VIN"

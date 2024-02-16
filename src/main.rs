@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+#![cfg_attr(feature = "bundle", windows_subsystem = "windows")]
 
 // dx serve --hot-reload --platform desktop
 
@@ -11,7 +12,6 @@ mod tests;
 mod client;
 
 // ANCHOR_END: router
-
 
 fn main() {
 
