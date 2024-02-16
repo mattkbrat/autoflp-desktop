@@ -207,6 +207,7 @@ dependencies = [
  "either",
  "reqwest",
  "serde",
+ "serde_derive",
  "serde_json",
  "tokio-test",
  "url",

@@ -3,6 +3,7 @@ mod nav_bar;
 mod account;
 mod meta;
 mod inventory;
+mod motd;
 
 use dioxus::hooks::use_shared_state_provider;
 use dioxus::prelude::*;
@@ -15,12 +16,15 @@ use deal_viewer::DealViewer;
 use meta::{Home, PageNotFound};
 use nav_bar::NavBar;
 use inventory::{InventoryPage};
+use crate::lib;
 use crate::lib::account::get_full_name::{full_name_from_person, FullNameFormat};
 use crate::lib::database::deal::DealsByAccount;
 
 use crate::lib::database::models::{Account, Person, PersonName};
 use crate::lib::finance::add;
-
+use crate::lib::qotd::{fetch_quotable, Quotable, Root};
+use crate::lib::unsplash::fetch::fetch_unsplash;
+use crate::lib::unsplash::structs::{UnsplashIndex, UnsplashResultParsed, UnsplashResults};
 
 
 // ANCHOR: router
@@ -57,8 +61,16 @@ pub fn App(cx: Scope) -> Element {
     use_shared_state_provider(cx, || SelectedDeal::default());
     use_shared_state_provider(cx, || SelectedAccount::default());
     use_shared_state_provider(cx, || Error::default());
+    use_shared_state_provider(cx, || UnsplashResults::default());
+    use_shared_state_provider(cx, || Quotable::default());
+    use_shared_state_provider(cx, || UnsplashIndex::default());
 
-    render! { Router::<Route> {}, ErrorDisplay{ } }
+
+
+    render! {
+        Router::<Route> {}
+        ErrorDisplay {}
+    }
 }
 
 #[component]
@@ -74,12 +86,8 @@ fn ErrorDisplay(cx: Scope) -> Element {
     let error_message = error.read().message.clone();
 
     cx.render(rsx! {
-        div {
-            class: "error",
-            span {
-                class: "text-2xl",
-                "Error"
-            }
+        div { class: "error",
+            span { class: "text-2xl", "Error" }
             span { "{error_code}" }
             span { class: "text-wrap", "{error_message}" }
         }

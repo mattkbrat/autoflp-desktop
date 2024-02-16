@@ -1,6 +1,7 @@
 use dioxus::core_macro::component;
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
+use crate::client::motd::MessageOfTheDay;
 
 #[component]
 pub fn About(cx: Scope) -> Element {
@@ -16,7 +17,10 @@ pub fn About(cx: Scope) -> Element {
 
 #[component]
 pub fn Home(cx: Scope) -> Element {
-    render! { About {} }
+    render! {
+        About {}
+        MessageOfTheDay {}
+    }
 }
 
 #[component]
