@@ -4,14 +4,14 @@ use std::env;
 use dotenvy::dotenv;
 use url::Url;
 
-use crate::lib::unsplash::structs::Root;
+use crate::lib::unsplash::structs::UnsplashResults;
 
 fn type_of<T>(_: T) -> &'static str {
     // (DevinR528, https://users.rust-lang.org/t/how-check-type-of-variable/33845/2)
     type_name::<T>()
 }
 
-pub(crate) async fn fetch_unsplash(query: &str, count: &u8) -> Result<Root, String> {
+pub(crate) async fn fetch_unsplash(query: &str, count: u8) -> Result<UnsplashResults, String> {
 
     dotenv().ok();
 
@@ -34,7 +34,7 @@ pub(crate) async fn fetch_unsplash(query: &str, count: &u8) -> Result<Root, Stri
         return Err(format!("Failed to fetch URL: {}", response.status()));
     }
 
-    let root = response.json::<Root>().await;
+    let root = response.json::<UnsplashResults>().await;
 
     if !root.is_ok() {
         println!("Failed to parse JSON: {:?}", root);
@@ -58,7 +58,7 @@ mod tests {
 
     #[test]
     fn test_fetch() {
-        let result = aw!(fetch_unsplash(&"automobile", &1));
+        let result = aw!(fetch_unsplash(&"automobile", 1));
         if !&result.is_ok() {
             println!("Test failed, {:?}", result.clone().unwrap_err())
         }

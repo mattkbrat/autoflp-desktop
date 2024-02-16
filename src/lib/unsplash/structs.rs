@@ -1,9 +1,40 @@
 // generated with https://transform.tools/json-to-rust-serde
 
+use std::string::ToString;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-pub type Root = Vec<Root2>;
+const IMAGE_URL: &str = "https://images.unsplash.com/photo-1707343848552-893e05dba6ac?crop=entropy&cs=srgb&fm=jpg&ixid=M3w1MzQxNTB8MXwxfHNlYXJjaHwxfHxtb3VudGFpbnxlbnwxfDB8fHwxNzA3OTQ1Nzk0fDA&ixlib=rb-4.0.3&q=85";
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub(crate) struct UnsplashResultParsed {
+    pub alt_description: String,
+    pub color: String,
+    pub height: i32,
+    pub width: i32,
+    pub image_url: String,
+    pub user_link: String,
+    pub user_name: String,
+    pub image_html: String,
+}
+
+impl Default for UnsplashResultParsed {
+    fn default() -> Self {
+        UnsplashResultParsed {
+            alt_description: "".to_string(),
+            color: "".to_string(),
+            height: 609,
+            width: 1035,
+            image_url: IMAGE_URL.to_string(),
+            user_link: "".to_string(),
+            user_name: "".to_string(),
+            image_html: "".to_string(),
+        }
+    }
+}
+
+pub type UnsplashResults = Vec<Root2>;
+pub type UnsplashIndex = u8;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
