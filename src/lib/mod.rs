@@ -6,3 +6,4 @@ pub(crate) mod pushover;
 pub mod titlecase;
 pub mod account;
 pub(crate) mod unsplash;
+ pub(crate) mod qotd;
