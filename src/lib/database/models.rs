@@ -190,62 +190,123 @@ impl SanitizedInventory {
             state: 1,
         }
     }
+
+    pub(crate) fn to_inventory(&self) -> Inventory {
+        Inventory {
+            id: self.id.clone(),
+            vin: self.vin.clone(),
+            year: self.year.clone(),
+            make: self.make.clone(),
+            model: Some(self.model.clone()),
+            body: Some(self.body.clone()),
+            color: Some(self.color.clone()),
+            fuel: Some(self.fuel.clone()),
+            cwt: Some(self.cwt.clone()),
+            mileage: Some(self.mileage.clone()),
+            date_added: None,
+            date_modified: None,
+            picture: None,
+            cash: Some(self.cash.clone()),
+            credit: Some(self.credit.clone()),
+            down: Some(self.down.clone()),
+            state: self.state,
+        }
+    }
+
+    pub(crate) fn format(&self) -> String {
+        Inventory::format(&self.to_inventory())
+    }
 }
 
 impl Inventory {
 
+    pub(crate) fn format(&self) -> String {
+            let make = match &self.make == "none" {
+                true => "",
+                false => &self.make
+            };
 
-    pub(crate) fn sanitize(i: Inventory) -> SanitizedInventory {
-        let model = match i.model.to_owned() {
+            let model = match &self.model {
+                Some(x) if x != "none" => x.to_owned(),
+                _ => String::new()
+            };
+
+            let year = match &self.year == "none" {
+                true => String::new(),
+                false => {
+                    let year = self.year.to_string();
+                    let year_split = year.split(".");
+                    year_split.clone().nth(0).unwrap().to_string()
+                }
+            };
+
+            let color = match &self.color {
+                Some(x) if x != "none" => x.to_owned(),
+                _ => String::new()
+            };
+
+            let vin_last_four = match &self.vin.len() > &4 {
+                true => self.vin.chars().skip(self.vin.len() - 4).collect::<String>(),
+                false => self.vin.to_owned()
+            };
+
+            let inv = format!("{} {} {} {} {}", color, year, make, model, vin_last_four);
+
+            let formatted = format!("{} {} {} {} {}", color, year, make, model, vin_last_four);
+            formatted.trim().to_string().to_uppercase()
+        }
+
+        pub(crate) fn sanitize(&self) -> SanitizedInventory {
+        let model = match self.model.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
             _ => String::new()
         };
 
-        let color = match i.color.to_owned() {
+        let color = match self.color.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
             _ => String::new()
         };
 
-        let mileage = match i.mileage.to_owned() {
+        let mileage = match self.mileage.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
             _ => String::new()
         };
 
-        let fuel = match i.fuel.to_owned() {
+        let fuel = match self.fuel.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
             _ => String::new()
         };
 
-        let cwt = match i.cwt.to_owned() {
+        let cwt = match self.cwt.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
             _ => String::new()
         };
 
-        let cash = match i.cash.to_owned() {
+        let cash = match self.cash.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
             _ => "0.0".to_string()
         };
 
-        let credit = match i.credit.to_owned() {
+        let credit = match self.credit.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
             _ => "0.0".to_string()
         };
 
-        let down = match i.down.to_owned() {
+        let down = match self.down.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
             _ => "0.0".to_string()
         };
 
-        let body = match i.body.to_owned() {
+        let body = match self.body.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
             _ => String::new()
         };
 
         SanitizedInventory {
-            id: i.id,
-            vin: i.vin,
-            year: i.year,
-            make: i.make,
+            id: self.id.clone(),
+            vin: self.vin.clone(),
+            year: self.year.clone(),
+            make: self.make.clone(),
             model,
             body,
             color,
@@ -255,7 +316,7 @@ impl Inventory {
             cash,
             credit,
             down,
-            state: i.state,
+            state: self.state.clone(),
         }
         
     }

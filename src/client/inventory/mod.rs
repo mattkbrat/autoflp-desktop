@@ -9,7 +9,24 @@ use crate::lib::database::inventory;
 use crate::lib::database::inventory::get_inventory::get_inventory;
 use crate::lib::database::models::{Inventory, SanitizedInventory};
 use crate::lib::date::get_today::get_today;
-use crate::lib::inventory::format::format_inventory;
+use crate::lib::inventory::nhtsa::get_vehicle_info;
+use crate::lib::titlecase::string_to_title;
+
+#[derive(Debug)]
+struct VinFetched {
+    vin: String,
+    fetched: bool,
+}
+
+impl Default for VinFetched {
+    fn default() -> Self {
+        Self {
+            vin: String::new(),
+            fetched: false,
+        }
+    }
+}
+
 
 #[component]
 pub fn InventoryPage(cx: Scope) -> Element {
@@ -19,6 +36,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
     let inventory_state = use_state(cx, || 1);
     let formatted = use_state(cx, || String::new());
     let error = use_shared_state::<Error>(cx).unwrap();
+    let vin_fetched = use_state(cx, || VinFetched::default());
 
 
     use_effect(cx, inventory_state, |state| {
@@ -36,8 +54,8 @@ pub fn InventoryPage(cx: Scope) -> Element {
         async move {
             let inventory = get_inventory_by_id(Some(&(id.get())));
             if let Some(inventory) = inventory {
-                formatted.set(format_inventory(&inventory, true));
-                selected_inventory.set(Inventory::sanitize(inventory));
+                formatted.set(string_to_title(&*Inventory::format(&inventory)));
+                selected_inventory.set(Inventory::sanitize(&inventory));
             } else {
                 formatted.set(String::new());
                 selected_inventory.set(SanitizedInventory::default());
@@ -86,7 +104,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
                             key: "0", id: "0", value: "0", "New Inventory Record"
                         },
                         all.iter().map(|x| {
-                            let formatted = format_inventory(x.to_owned(), true);
+                            let formatted = string_to_title(&*Inventory::format(x.to_owned()));
                             let id = x.vin.to_owned();
                             rsx!{ option {
                             key: "{id}", id: "{id}", value: "{x.id}", "{formatted}" }} }
@@ -126,7 +144,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
             },
             label { class: "flex flex-col uppercase",
                 "VIN"
-                input { name: "vin", r#type: "text", value: "{selected_inventory.vin}" }
+                input { name: "vin", r#type: "text", value: "{vin_fetched.vin}" }
             }
             label { class: "flex flex-col uppercase",
                 "Make"
