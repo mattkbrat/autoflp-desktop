@@ -159,7 +159,7 @@ pub fn MessageOfTheDay(cx: Scope) -> Element {
                     a { href: "{u.user_link}", "{u.user_name}" }
                     " on "
                     a { href: "https://unsplash.com/", "Unsplash" }
-                },
+                }
                 button {
                     class: "btn !text-sm p-4",
                     onclick: move |_| {
@@ -168,25 +168,19 @@ pub fn MessageOfTheDay(cx: Scope) -> Element {
                     },
                     "Next"
                 }
-            },
+            }
             // Qotable quote
             div {
                 class: "absolute flex flex-col items-center justify-center gap-2 bottom-0 left-0 p-4",
                 background: "rgba(255, 255, 255, 0.5)",
                 border_radius: "0.5rem",
                 color: "black",
-                    a { href: "https://quotable.io/",
+                a { href: "https://quotable.io/",
 
-                    span {
-                        class: "text-sm",
-                        "{q.content}"
-                    },
-                    br{},
-                    span {
-                        class: "text-xs",
-                        "{q.author}"
-                    }
-                    }
+                    span { class: "text-sm", "{q.content}" }
+                    br {}
+                    span { class: "text-xs", "{q.author}" }
+                }
             }
         }
     }

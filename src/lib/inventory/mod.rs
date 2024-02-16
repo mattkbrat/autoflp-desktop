@@ -1,5 +1,4 @@
-pub mod nhtsa;
-pub mod format;
+pub(crate) mod nhtsa;
 
 
 

@@ -39,8 +39,13 @@ pub(crate) async fn fetch_quotable() -> Result<Quotable, String> {
 
     let response = response.unwrap();
 
-    let quote: Root = response.json().await.unwrap();
-    Ok(quote[0].clone())
+    let quote: Result<Root, _> = response.json().await;
+    if (quote.is_ok()) {
+        return Ok(quote.unwrap()[0].clone());
+    } else {
+        let error_message = quote.unwrap_err();
+        return Err(error_message.to_string());
+    }
 }
 
 #[cfg(test)]

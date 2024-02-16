@@ -3,29 +3,18 @@ use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 
 use inventory::get_inventory_by_id::get_inventory_by_id;
-use crate::client::Error;
 
+use crate::client::Error;
+use crate::lib::database::account::update_person::update_details;
 use crate::lib::database::inventory;
 use crate::lib::database::inventory::get_inventory::get_inventory;
-use crate::lib::database::models::{Inventory, SanitizedInventory};
+use crate::lib::database::inventory::upsert::upsert_inventory;
+use crate::lib::database::models::{Inventory, PersonForm, SanitizedInventory};
 use crate::lib::date::get_today::get_today;
-use crate::lib::inventory::nhtsa::get_vehicle_info;
+use crate::lib::inventory::nhtsa::{get_vehicle_info, NHTSALookup};
 use crate::lib::titlecase::string_to_title;
 
-#[derive(Debug)]
-struct VinFetched {
-    vin: String,
-    fetched: bool,
-}
-
-impl Default for VinFetched {
-    fn default() -> Self {
-        Self {
-            vin: String::new(),
-            fetched: false,
-        }
-    }
-}
+type FetchedVin = String;
 
 
 #[component]
@@ -33,10 +22,10 @@ pub fn InventoryPage(cx: Scope) -> Element {
     let id = use_state(cx, || String::new());
     let all_inventory = use_state(cx, || None);
     let selected_inventory = use_state(cx, || SanitizedInventory::default());
-    let inventory_state = use_state(cx, || 1);
+    let inventory_state = use_state(cx, || 0);
     let formatted = use_state(cx, || String::new());
     let error = use_shared_state::<Error>(cx).unwrap();
-    let vin_fetched = use_state(cx, || VinFetched::default());
+    let vin_fetched = use_state(cx, || FetchedVin::default());
 
 
     use_effect(cx, inventory_state, |state| {
@@ -63,21 +52,109 @@ pub fn InventoryPage(cx: Scope) -> Element {
         }
     });
 
+    use_effect(cx, (selected_inventory, all_inventory), |(selected_inventory, all_inventory)| {
+        //     If the vin is entered manually, find the vehicle info.
+        to_owned![selected_inventory, formatted, all_inventory];
+        async move {
+            let all_inventory_is_some = all_inventory.get().is_some();
+            let bad_selected = selected_inventory.make.is_empty();
+            let has_valid_vin_length = selected_inventory.vin.len() == 17;
+            if all_inventory_is_some && bad_selected && has_valid_vin_length {
+                let all_inventory = all_inventory.get().clone().unwrap();
+                let vin = selected_inventory.vin.to_lowercase();
+                let recorded = all_inventory.into_iter().filter(|x| x.vin.to_lowercase() == vin).collect::<Vec<_>>();
+                if (!recorded.is_empty()) {
+                    let first = recorded.first().unwrap();
+                    let sanitized = Inventory::sanitize(&first).clone();
+                    selected_inventory.set(sanitized.clone());
+                    formatted.set(string_to_title(&*SanitizedInventory::format(&sanitized)));
+                }
+            }
+        }
+    });
+
+    use_effect(cx, (vin_fetched, selected_inventory), |(vin_fetched, selected_inventory)| {
+        to_owned![vin_fetched, selected_inventory, formatted, error];
+        async move {
+            let current_fetched = vin_fetched.get().clone();
+            if current_fetched != selected_inventory.vin && selected_inventory.vin.len() == 17 {
+                let fetched = get_vehicle_info(selected_inventory.vin.clone()).await;
+                if fetched.is_ok() {
+                    vin_fetched.set(selected_inventory.vin.clone());
+                    let vehicle = fetched.unwrap();
+                    let current_selected = selected_inventory.current();
+                    let with_lookup = selected_inventory.get().clone().with_lookup(vehicle);
+                    selected_inventory.set(with_lookup);
+                    formatted.set(selected_inventory.current().format());
+                    error.write().code = 0;
+                } else {
+                    let error_message = fetched.unwrap_err();
+                    error.write().code = 5002;
+                    error.write().message = error_message;
+                }
+            }
+        }
+    });
+
+    let handle_upsert = move |i: SanitizedInventory| {
+        cx.spawn({
+            to_owned![error, i, selected_inventory, inventory_state, all_inventory];
+            async move {
+                // Parse the form
+
+                // let account_string = SelectedAccount::details(selected_account.read().clone());
+                let result = upsert_inventory(i.clone()).await;
+
+                if result.is_ok() {
+                    // inventory_state.set(0);
+                    error.write().code = 0;
+
+                    let vin = i.vin.clone().to_lowercase();
+                    let cloned = all_inventory.get().clone().unwrap();
+                    let found = cloned.iter().position(|x| x.vin.to_lowercase() == vin);
+                    if found.is_some() {
+                        let found = found.unwrap();
+                        let result = result.unwrap();
+                        let mut current_inventory = cloned;
+                        current_inventory[found] = result;
+                        all_inventory.set(Some(current_inventory));
+                        let mut new_default = SanitizedInventory::default();
+                        new_default.vin = vin;
+                        selected_inventory.set(new_default);
+                        error.write().code = 0;
+                    }
+                } else {
+                    error.write().code = 5001;
+                    error.write().message = result.unwrap_err();
+                }
+            }
+        });
+    };
+
+    // let handle_lookup = move |_| {
+    //     cx.spawn({
+    //         to_owned![error, selected_inventory, inventory_state, all_inventory];
+    //         async move {
+    //             let fetched = get_vehicle_info(selected_inventory.vin.clone()).await;
+    //             if fetched.is_ok() {
+    //                 vin_fetched.set(selected_inventory.vin.clone());
+    //                 let vehicle = fetched.unwrap();
+    //                 let current_selected = selected_inventory.current();
+    //                 let with_lookup = selected_inventory.get().clone().with_lookup(vehicle);
+    //                 selected_inventory.set(with_lookup);
+    //                 formatted.set(selected_inventory.current().format());
+    //                 error.write().code = 0;
+    //             } else {
+    //                 let error_message = fetched.unwrap_err();
+    //                 error.write().code = 5002;
+    //                 error.write().message = error_message;
+    //             }
+    //         }
+    //     });
+    // };
+
 
     let all = all_inventory.as_ref();
-
-    //         model -> Nullable<Text>,
-    //         body -> Nullable<Text>,
-    //         color -> Nullable<Text>,
-    //         fuel -> Nullable<Text>,
-    //         cwt -> Nullable<Text>,
-    //         mileage -> Nullable<Text>,
-    //         date_added -> Nullable<Text>,
-    //         date_modified -> Nullable<Text>,
-    //         picture -> Nullable<Text>,
-    //         cash -> Nullable<Text>,
-    //         credit -> Nullable<Text>,
-    //         down -> Nullable<Text>,
 
     let (next_state, next_state_string) = match inventory_state.get() {
         0 => (1, "Open"),
@@ -104,8 +181,8 @@ pub fn InventoryPage(cx: Scope) -> Element {
                             key: "0", id: "0", value: "0", "New Inventory Record"
                         },
                         all.iter().map(|x| {
-                            let formatted = string_to_title(&*Inventory::format(x.to_owned()));
-                            let id = x.vin.to_owned();
+                            let formatted = string_to_title(&*Inventory::format(x));
+                            let id = x.vin.clone();
                             rsx!{ option {
                             key: "{id}", id: "{id}", value: "{x.id}", "{formatted}" }} }
                         )
@@ -123,8 +200,10 @@ pub fn InventoryPage(cx: Scope) -> Element {
                 r#type: "button",
                 class: "btn-warning p-4 outline-secondary-400",
                 onclick: move |_| {
-                        to_owned![id];
+                        to_owned![id, selected_inventory, formatted];
                         id.set(String::new());
+                        selected_inventory.set(SanitizedInventory::default());
+                        formatted.set(String::new());
                 },
                 "Clear"
             },
@@ -138,14 +217,53 @@ pub fn InventoryPage(cx: Scope) -> Element {
         form {
             class: "grid grid-cols-3 gap-4 uppercase text-left",
             onsubmit: move |event| {
+                to_owned![selected_inventory, inventory_state];
                 let values = &event.data.values;
-                let deal_id = &values.get("id");
-                println!("{:?}", values);
+                let deal_id = values.get("id");
+                let id = selected_inventory.id.clone();
+                let values = &event.data.values;
+                let current = SanitizedInventory {
+                    id,
+                    vin: values.get("vin").unwrap()[0].to_string(),
+                    make: values.get("make").unwrap()[0].to_string(),
+                    model: values.get("model").unwrap()[0].to_string(),
+                    year: values.get("year").unwrap()[0].to_string(),
+                    color: values.get("color").unwrap()[0].to_string(),
+                    fuel: values.get("fuel").unwrap()[0].to_string(),
+                    cwt: values.get("cwt").unwrap()[0].to_string(),
+                    mileage: values.get("mileage").unwrap()[0].to_string(),
+                    date_modified: Option::from(get_today().to_string()),
+                    cash: values.get("cash").unwrap()[0].to_string(),
+                    credit: values.get("credit").unwrap()[0].to_string(),
+                    down: values.get("down").unwrap()[0].to_string(),
+                    body: values.get("body").unwrap()[0].to_string(),
+                    state: inventory_state.get().clone(),
+                };
+                handle_upsert(current.clone());
             },
-            label { class: "flex flex-col uppercase",
+            div {
+                class: "col-span-full grid-cols-2 gap-4",
+                label { class: "flex flex-col uppercase",
                 "VIN"
-                input { name: "vin", r#type: "text", value: "{vin_fetched.vin}" }
-            }
+                input {
+                    name: "vin",
+                    r#type: "text",
+                    onchange: move |event| {
+                        to_owned![selected_inventory, vin_fetched];
+                        let mut current_selected = selected_inventory.get().clone();
+                        current_selected.vin = event.value.clone();
+                        selected_inventory.set(current_selected.clone());
+                        vin_fetched.set(FetchedVin::default());
+                    },
+                    value: "{selected_inventory.vin}"
+                }
+            },
+                // button {
+                //     r#type: "button",
+                //     onclick: handle_lookup
+                // }
+            },
+
             label { class: "flex flex-col uppercase",
                 "Make"
                 input { name: "make", r#type: "text", value: "{selected_inventory.make}" }

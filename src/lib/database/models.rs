@@ -7,6 +7,8 @@ use std::fmt::Debug;
 use diesel::prelude::*;
 use serde::Deserialize;
 use crate::lib::database::schema::*;
+use crate::lib::date::get_today::get_today;
+use crate::lib::inventory::nhtsa::NHTSALookup;
 
 #[derive(Queryable, Identifiable, Associations, Selectable, PartialEq, Debug, Clone)]
 #[diesel(table_name = account)]
@@ -129,7 +131,7 @@ pub struct DefaultCharge {
     pub charge: String,
 }
 
-#[derive(Queryable, Identifiable, Selectable, PartialEq, Debug)]
+#[derive(Queryable, Identifiable, Selectable, PartialEq, Debug, Clone, Default)]
 #[diesel(table_name = inventory)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Inventory {
@@ -152,7 +154,7 @@ pub struct Inventory {
     pub state: i32,
 }
 
-#[derive(Deserialize, Insertable, Debug)]
+#[derive(Deserialize, Insertable, Debug, PartialEq, Clone, AsChangeset)]
 #[diesel(table_name = inventory)]
 pub(crate) struct SanitizedInventory {
     pub id: String,
@@ -169,6 +171,7 @@ pub(crate) struct SanitizedInventory {
     pub credit: String,
     pub down: String,
     pub state: i32,
+    pub date_modified: Option<String>,
 }
 
 impl SanitizedInventory {
@@ -181,13 +184,14 @@ impl SanitizedInventory {
             model: String::new(),
             body: String::new(),
             color: String::new(),
-            fuel: String::new(),
+            fuel: String::from("GAS"),
             cwt: String::new(),
             mileage: String::new(),
             cash: "0.0".to_string(),
             credit: "0.0".to_string(),
             down: "0.0".to_string(),
             state: 1,
+            date_modified: Option::from(get_today().to_string()),
         }
     }
 
@@ -211,6 +215,14 @@ impl SanitizedInventory {
             down: Some(self.down.clone()),
             state: self.state,
         }
+    }
+
+    pub(crate) fn with_lookup(self, vehicle: NHTSALookup) -> SanitizedInventory {
+        let mut current = self.clone();
+        current.make = vehicle.make;
+        current.model = vehicle.model;
+        current.year = vehicle.year;
+        current
     }
 
     pub(crate) fn format(&self) -> String {
@@ -274,7 +286,7 @@ impl Inventory {
 
         let fuel = match self.fuel.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
-            _ => String::new()
+            _ => String::from("GAS")
         };
 
         let cwt = match self.cwt.to_owned() {
@@ -303,20 +315,21 @@ impl Inventory {
         };
 
         SanitizedInventory {
-            id: self.id.clone(),
-            vin: self.vin.clone(),
+            id: self.id.clone().to_uppercase(),
+            vin: self.vin.clone().to_uppercase(),
             year: self.year.clone(),
-            make: self.make.clone(),
-            model,
-            body,
-            color,
-            fuel,
+            make: self.make.clone().to_uppercase(),
+            model: model.to_uppercase(),
+            body: body.to_uppercase(),
+            color: color.to_uppercase(),
+            fuel: fuel.to_uppercase(),
             cwt,
             mileage,
             cash,
             credit,
             down,
             state: self.state.clone(),
+            date_modified: Option::from(get_today().to_string()),
         }
         
     }
