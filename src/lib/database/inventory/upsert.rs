@@ -4,6 +4,7 @@ use crate::lib::database;
 use crate::lib::database::models::{Inventory, SanitizedInventory};
 use crate::lib::database::schema::inventory;
 use crate::lib::database::schema::inventory::vin;
+use crate::lib::inventory::nhtsa::get_vehicle_info;
 
 pub(crate) async fn upsert_inventory(mut upsert: SanitizedInventory) -> Result<Inventory, String> {
     let mut conn = database::establish_connection();
@@ -16,6 +17,14 @@ pub(crate) async fn upsert_inventory(mut upsert: SanitizedInventory) -> Result<I
         .unwrap();
 
     let can_update = selected_inventory.is_some();
+
+    let valid_vin = get_vehicle_info(upsert.vin.clone()).await;
+
+    if valid_vin.is_err() {
+        let error_message = valid_vin.unwrap_err().1;
+        return Err(format!("Invalid VIN: {}", error_message));
+    }
+
     let result = match (can_update) {
         true => {
             let selected_inventory = selected_inventory.unwrap();
