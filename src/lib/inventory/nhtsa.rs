@@ -3,7 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use serde_json::Value;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct NHTSALookup {
     pub make: String,
     pub model: String,
@@ -34,7 +34,7 @@ pub async fn fetch_nhtsa(vin: String) -> Result<Vec<Value>, String> {
     Ok(results.to_owned())
 }
 
-pub fn format_nhtsa(value: Vec<Value>) -> Result<NHTSALookup, String> {
+pub fn format_nhtsa(value: Vec<Value>) -> Result<NHTSALookup, (NHTSALookup, String)> {
     let mut vehicle = HashMap::new();
 
     for item in value {
@@ -57,14 +57,16 @@ pub fn format_nhtsa(value: Vec<Value>) -> Result<NHTSALookup, String> {
         None => unknown.to_owned(),
     };
 
+    let mut error_message = String::new();
+
     if error_code != "0" {
-        let error_message = format!("Error code {error_code} returned: {}",
+        error_message = format!("Error code {error_code} returned: {}",
                                     &*match vehicle.get("Error Text") {
                                         Some(error_message) => error_message.to_owned(),
                                         None => unknown.to_owned(),
                                     }
         ).to_owned();
-        return Err(error_message.to_string());
+        // return Err(error_message.to_string());
     }
 
     let make = match vehicle.get("Make") {
@@ -87,22 +89,34 @@ pub fn format_nhtsa(value: Vec<Value>) -> Result<NHTSALookup, String> {
         None => unknown.to_owned(),
     };
 
-    Ok(NHTSALookup {
+    let result = NHTSALookup {
         make,
         model,
         year,
         vin,
-    })
+    };
+
+    match (error_message.is_empty()) {
+        true => Ok(result),
+        false => Err((result, error_message.to_string()))
+    }
 }
 
-pub async fn get_vehicle_info(vin: String) -> Result<NHTSALookup, String> {
+pub async fn get_vehicle_info(vin: String) -> Result<NHTSALookup, (Option<NHTSALookup>, String)> {
     let response = fetch_nhtsa(vin).await;
     let json = match response {
         Ok(json) => json,
-        Err(e) => return Err(e),
+        Err(e) => return Err((None, e)),
     };
 
     let vehicle = format_nhtsa(json);
 
-    vehicle
+
+    match vehicle.is_ok() {
+        true => Ok(vehicle.unwrap()),
+        false => {
+            let error = vehicle.unwrap_err();
+            Err((Some(error.0), error.1))
+        }
+    }
 }

@@ -1,4 +1,5 @@
 use chrono::Datelike;
+use dioxus::html::svg;
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 
@@ -10,7 +11,7 @@ use crate::lib::database::inventory::get_inventory::get_inventory;
 use crate::lib::database::inventory::upsert::upsert_inventory;
 use crate::lib::database::models::{Inventory, SanitizedInventory};
 use crate::lib::date::get_today::get_today;
-use crate::lib::inventory::nhtsa::get_vehicle_info;
+use crate::lib::inventory::nhtsa::{get_vehicle_info, NHTSALookup};
 use crate::lib::titlecase::string_to_title;
 
 type FetchedVin = String;
@@ -25,6 +26,63 @@ pub fn InventoryPage(cx: Scope) -> Element {
     let formatted = use_state(cx, || String::new());
     let error = use_shared_state::<Error>(cx).unwrap();
     let vin_fetched = use_state(cx, || FetchedVin::default());
+
+
+
+    let handle_lookup = move |_| {
+        cx.spawn({
+            to_owned![error, selected_inventory, vin_fetched, formatted];
+            async move {
+                let fetched = get_vehicle_info(selected_inventory.vin.clone()).await;
+                let is_ok = fetched.is_ok();
+
+                let mut vehicle: Option<NHTSALookup> = None;
+
+                if is_ok {
+                    vin_fetched.set(selected_inventory.vin.clone());
+                    vehicle = Some(fetched.unwrap());
+                    error.write().code = 0;
+
+                } else {
+                    let fetch_error = fetched.unwrap_err();
+                    if fetch_error.0.is_some() {
+                        vehicle = Some(fetch_error.0.unwrap());
+                    }
+                    error.write().code = 5002;
+                    error.write().message = fetch_error.1;
+                }
+
+                let current_selected = selected_inventory.current();
+
+                if let Some(vehicle) = vehicle {
+
+                    let new_inventory = SanitizedInventory {
+                        id: current_selected.id.clone(),
+                        vin: current_selected.vin.clone(),
+                        make: vehicle.make.clone(),
+                        model: vehicle.model.clone(),
+                        year: vehicle.year.clone(),
+                        color: current_selected.color.clone(),
+                        fuel: current_selected.fuel.clone(),
+                        cwt: current_selected.cwt.clone(),
+                        mileage: current_selected.mileage.clone(),
+                        date_modified: Option::from(get_today().to_string()),
+                        cash: current_selected.cash.clone(),
+                        credit: current_selected.credit.clone(),
+                        down: current_selected.down.clone(),
+                        body: current_selected.body.clone(),
+                        state: current_selected.state.clone(),
+                    };
+
+                    formatted.set(new_inventory.format().clone());
+
+                    selected_inventory.set(new_inventory);
+
+                }
+
+            }
+        });
+    };
 
 
     use_effect(cx, inventory_state, |state| {
@@ -62,7 +120,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
                 let all_inventory = all_inventory.get().clone().unwrap();
                 let vin = selected_inventory.vin.to_lowercase();
                 let recorded = all_inventory.into_iter().filter(|x| x.vin.to_lowercase() == vin).collect::<Vec<_>>();
-                if (!recorded.is_empty()) {
+                if !recorded.is_empty() {
                     let first = recorded.first().unwrap();
                     let sanitized = Inventory::sanitize(&first).clone();
                     selected_inventory.set(sanitized.clone());
@@ -78,10 +136,26 @@ pub fn InventoryPage(cx: Scope) -> Element {
             let current_fetched = vin_fetched.get().clone();
             if current_fetched != selected_inventory.vin && selected_inventory.vin.len() == 17 {
                 let fetched = get_vehicle_info(selected_inventory.vin.clone()).await;
+
+                let mut vehicle: Option<NHTSALookup> = None;
+
                 if fetched.is_ok() {
                     vin_fetched.set(selected_inventory.vin.clone());
-                    let vehicle = fetched.unwrap();
-                    let current_selected = selected_inventory.current();
+                    vehicle = Some(fetched.unwrap());
+                    error.write().code = 0;
+
+                } else {
+                    let fetch_error = fetched.unwrap_err();
+                    if fetch_error.0.is_some() {
+                        vehicle = Some(fetch_error.0.unwrap());
+                    }
+                    error.write().code = 5002;
+                    error.write().message = fetch_error.1;
+                }
+
+                let current_selected = selected_inventory.current();
+
+                if let Some(vehicle) = vehicle {
 
                     let new_inventory = SanitizedInventory {
                         id: current_selected.id.clone(),
@@ -105,11 +179,6 @@ pub fn InventoryPage(cx: Scope) -> Element {
 
                     selected_inventory.set(new_inventory);
 
-                    error.write().code = 0;
-                } else {
-                    let error_message = fetched.unwrap_err();
-                    error.write().code = 5002;
-                    error.write().message = error_message;
                 }
             }
         }
@@ -158,28 +227,6 @@ pub fn InventoryPage(cx: Scope) -> Element {
             }
         });
     };
-
-    // let handle_lookup = move |_| {
-    //     cx.spawn({
-    //         to_owned![error, selected_inventory, inventory_state, all_inventory];
-    //         async move {
-    //             let fetched = get_vehicle_info(selected_inventory.vin.clone()).await;
-    //             if fetched.is_ok() {
-    //                 vin_fetched.set(selected_inventory.vin.clone());
-    //                 let vehicle = fetched.unwrap();
-    //                 let current_selected = selected_inventory.current();
-    //                 let with_lookup = selected_inventory.get().clone().with_lookup(vehicle);
-    //                 selected_inventory.set(with_lookup);
-    //                 formatted.set(selected_inventory.current().format());
-    //                 error.write().code = 0;
-    //             } else {
-    //                 let error_message = fetched.unwrap_err();
-    //                 error.write().code = 5002;
-    //                 error.write().message = error_message;
-    //             }
-    //         }
-    //     });
-    // };
 
 
     let all = all_inventory.as_ref();
@@ -269,28 +316,37 @@ pub fn InventoryPage(cx: Scope) -> Element {
                 };
                 handle_upsert(current.clone());
             },
-            div {
-                class: "col-span-full grid-cols-2 gap-4",
+            div { class: "col-span-full grid grid-cols-[1fr_auto] gap-4",
                 label { class: "flex flex-col uppercase",
-                "VIN"
-                input {
-                    name: "vin",
-                    r#type: "text",
-                    onchange: move |event| {
-                        to_owned![selected_inventory, vin_fetched];
-                        let mut current_selected = selected_inventory.get().clone();
-                        current_selected.vin = event.value.clone();
-                        selected_inventory.set(current_selected.clone());
-                        vin_fetched.set(FetchedVin::default());
-                    },
-                    value: "{selected_inventory.vin}"
+                    "VIN"
+                    input {
+                        name: "vin",
+                        r#type: "text",
+                        onchange: move |event| {
+                            to_owned![selected_inventory, vin_fetched];
+                            let mut current_selected = selected_inventory.get().clone();
+                            current_selected.vin = event.value.clone();
+                            selected_inventory.set(current_selected.clone());
+                            vin_fetched.set(FetchedVin::default());
+                        },
+                        value: "{selected_inventory.vin}"
+                    }
+                }
+                button {
+                    r#type: "button",
+                    onclick: handle_lookup,
+                    svg {
+                        class: "w-12 h-12",
+                            color: "currentColor",
+                            fill: "currentColor",
+                            // Question Mark Lookup SVG
+                            path {
+                                d: "M 21 3 C 11.621094 3 4 10.621094 4 20 C 4 29.378906 11.621094 37 21 37 C 24.710938 37 28.140625 35.804688 30.9375 33.78125 L 44.09375 46.90625 L 46.90625 44.09375 L 33.90625 31.0625 C 36.460938 28.085938 38 24.222656 38 20 C 38 10.621094 30.378906 3 21 3 Z M 21 5 C 29.296875 5 36 11.703125 36 20 C 36 28.296875 29.296875 35 21 35 C 12.703125 35 6 28.296875 6 20 C 6 11.703125 12.703125 5 21 5 Z"
+                            }
+                    }
                 }
             },
-                // button {
-                //     r#type: "button",
-                //     onclick: handle_lookup
-                // }
-            },
+
 
             label { class: "flex flex-col uppercase",
                 "Make"
