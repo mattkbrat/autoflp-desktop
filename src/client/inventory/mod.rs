@@ -83,9 +83,29 @@ pub fn InventoryPage(cx: Scope) -> Element {
                     vin_fetched.set(selected_inventory.vin.clone());
                     let vehicle = fetched.unwrap();
                     let current_selected = selected_inventory.current();
-                    let with_lookup = selected_inventory.get().clone().with_lookup(vehicle);
-                    selected_inventory.set(with_lookup);
-                    formatted.set(selected_inventory.current().format());
+
+                    let new_inventory = SanitizedInventory {
+                        id: current_selected.id.clone(),
+                        vin: current_selected.vin.clone(),
+                        make: vehicle.make.clone(),
+                        model: vehicle.model.clone(),
+                        year: vehicle.year.clone(),
+                        color: current_selected.color.clone(),
+                        fuel: current_selected.fuel.clone(),
+                        cwt: current_selected.cwt.clone(),
+                        mileage: current_selected.mileage.clone(),
+                        date_modified: Option::from(get_today().to_string()),
+                        cash: current_selected.cash.clone(),
+                        credit: current_selected.credit.clone(),
+                        down: current_selected.down.clone(),
+                        body: current_selected.body.clone(),
+                        state: current_selected.state.clone(),
+                    };
+
+                    formatted.set(new_inventory.format().clone());
+
+                    selected_inventory.set(new_inventory);
+
                     error.write().code = 0;
                 } else {
                     let error_message = fetched.unwrap_err();
@@ -98,7 +118,8 @@ pub fn InventoryPage(cx: Scope) -> Element {
 
     let handle_upsert = move |i: SanitizedInventory| {
         cx.spawn({
-            to_owned![error, i, selected_inventory, inventory_state, all_inventory];
+            to_owned![error, i, selected_inventory, all_inventory, inventory_state];
+            // to_owned![error, i, all_inventory];
             async move {
                 // Parse the form
 
@@ -106,23 +127,26 @@ pub fn InventoryPage(cx: Scope) -> Element {
                 let result = upsert_inventory(i.clone()).await;
 
                 if result.is_ok() {
-                    // inventory_state.set(0);
                     error.write().code = 0;
 
                     let vin = i.vin.clone().to_lowercase();
-                    let cloned = all_inventory.get().clone().unwrap();
+                    let mut cloned = all_inventory.get().clone().unwrap();
                     let found = cloned.iter().position(|x| x.vin.to_lowercase() == vin);
                     if found.is_some() {
-                        let found = found.unwrap();
-                        let result = result.unwrap();
-                        let mut current_inventory = cloned;
-                        current_inventory[found] = result;
-                        all_inventory.set(Some(current_inventory));
-                        let mut new_default = SanitizedInventory::default();
-                        new_default.vin = vin;
-                        selected_inventory.set(new_default);
                         error.write().code = 0;
+                        {
+                            let found = found.unwrap();
+                            let result = result.unwrap();
+                            cloned[found] = result;
+                            all_inventory.set(Some(cloned));
+                        }
+                        {
+                            let mut new_default = SanitizedInventory::default();
+                            new_default.vin = vin;
+                            selected_inventory.set(new_default);
+                        }
                     }
+
                 } else {
                     error.write().code = 5001;
                     error.write().message = result.unwrap_err();
