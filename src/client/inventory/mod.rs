@@ -5,13 +5,12 @@ use dioxus_router::prelude::*;
 use inventory::get_inventory_by_id::get_inventory_by_id;
 
 use crate::client::Error;
-use crate::lib::database::account::update_person::update_details;
 use crate::lib::database::inventory;
 use crate::lib::database::inventory::get_inventory::get_inventory;
 use crate::lib::database::inventory::upsert::upsert_inventory;
-use crate::lib::database::models::{Inventory, PersonForm, SanitizedInventory};
+use crate::lib::database::models::{Inventory, SanitizedInventory};
 use crate::lib::date::get_today::get_today;
-use crate::lib::inventory::nhtsa::{get_vehicle_info, NHTSALookup};
+use crate::lib::inventory::nhtsa::get_vehicle_info;
 use crate::lib::titlecase::string_to_title;
 
 type FetchedVin = String;
