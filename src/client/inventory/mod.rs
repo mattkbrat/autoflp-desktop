@@ -316,6 +316,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
                 };
                 handle_upsert(current.clone());
             },
+
             div { class: "col-span-full grid grid-cols-[1fr_auto] gap-4",
                 label { class: "flex flex-col uppercase",
                     "VIN"
@@ -357,7 +358,6 @@ pub fn InventoryPage(cx: Scope) -> Element {
                 input { name: "model", r#type: "text", value: "{selected_inventory.model}" }
             }
             label { class: "flex flex-col uppercase",
-
                 "Year"
                 input {
                     name: "year",
@@ -368,16 +368,24 @@ pub fn InventoryPage(cx: Scope) -> Element {
                     value: "{selected_inventory.year}"
                 }
             }
+
             label { class: "flex flex-col uppercase",
 
                 "Color"
                 input { name: "color", r#type: "text", value: "{selected_inventory.color}" }
+            },
+            label { class: "flex flex-col uppercase",
+                "Body"
+                input { name: "body", r#type: "text", value: "{selected_inventory.body}" }
             }
             label { class: "flex flex-col uppercase",
 
                 "Mileage"
                 input { name: "mileage", r#type: "text", value: "{selected_inventory.mileage}" }
             }
+
+            div { class: "col-span-full grid grid-cols-2 gap-4",
+
             label { class: "flex flex-col uppercase",
 
                 "Fuel"
@@ -388,11 +396,8 @@ pub fn InventoryPage(cx: Scope) -> Element {
                 "CWT"
                 input { name: "cwt", r#type: "text", value: "{selected_inventory.cwt}" }
             }
-            label { class: "flex flex-col uppercase",
-
-                "Body"
-                input { name: "body", r#type: "text", value: "{selected_inventory.body}" }
             }
+
             // label {
             //
             //     "Picture",
