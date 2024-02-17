@@ -130,6 +130,48 @@ pub fn InventoryPage(cx: Scope) -> Element {
         }
     });
 
+    use_effect(cx, selected_inventory, |selected_inventory| {
+        //     If the vin is entered manually, find the vehicle info.
+        to_owned![selected_inventory];
+        async move {
+            // If the selected inventory is older than 10 years, the mileage is exempt.
+            // https://www.theconsumerlawgroup.com/blog/older-cars-are-exempt-from-odometer-disclosure-laws.cfm
+            let selected_year = &selected_inventory.get().year;
+            let selected_mileage = &selected_inventory.get().mileage;
+            let year = match selected_year.is_empty() {
+                false => {
+                    let parsed = selected_year.clone().parse::<i32>();
+                    if parsed.is_ok() {
+                        parsed.unwrap()
+                    } else {
+                        println!("Failed to parse year: {} ({})", parsed.unwrap_err(), selected_year);
+                        0
+                    }
+                },
+                true => 0
+            };
+
+            if year != 0 {
+                let this_year = get_today().year();
+                let is_old = this_year - year > 10;
+                let is_set_to_exempt = selected_mileage == "exempt";
+                // If is old and is not set to exempt, set to exempt.
+                // else if is not old and is set to exempt, set to empty.
+                // else, do nothing.
+                let new_mileage_text = match is_old {
+                    true if !is_set_to_exempt => Some("exempt".to_string()),
+                    false if is_set_to_exempt => Some("".to_string()),
+                    _ => None,
+                };
+                if let Some(new_mileage_text) = new_mileage_text  {
+                    let mut this_inventory = selected_inventory.get().clone();
+                    this_inventory.mileage = new_mileage_text;
+                    selected_inventory.set(this_inventory);
+                }
+            }
+        }
+    });
+
     use_effect(cx, (vin_fetched, selected_inventory), |(vin_fetched, selected_inventory)| {
         to_owned![vin_fetched, selected_inventory, formatted, error];
         async move {
@@ -364,8 +406,13 @@ pub fn InventoryPage(cx: Scope) -> Element {
                     r#type: "number",
                     step: "1",
                     min: "1900",
-                    max: "{this_year}",
-                    value: "{selected_inventory.year}"
+                    value: "{selected_inventory.year}",
+                    onchange: move |event| {
+                        to_owned![selected_inventory];
+                        let mut current_selected = selected_inventory.get().clone();
+                        current_selected.year = event.value.clone();
+                        selected_inventory.set(current_selected.clone());
+                    }
                 }
             }
 
