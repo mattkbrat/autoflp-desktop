@@ -117,7 +117,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
 
     let handle_upsert = move |i: SanitizedInventory| {
         cx.spawn({
-            to_owned![error, i, selected_inventory, all_inventory, inventory_state];
+            to_owned![error, i, selected_inventory, all_inventory, formatted];
             // to_owned![error, i, all_inventory];
             async move {
                 // Parse the form
@@ -132,19 +132,24 @@ pub fn InventoryPage(cx: Scope) -> Element {
                     let mut cloned = all_inventory.get().clone().unwrap();
                     let found = cloned.iter().position(|x| x.vin.to_lowercase() == vin);
                     if found.is_some() {
-                        error.write().code = 0;
-                        {
                             let found = found.unwrap();
                             let result = result.unwrap();
                             cloned[found] = result;
                             all_inventory.set(Some(cloned));
-                        }
-                        {
-                            let mut new_default = SanitizedInventory::default();
-                            new_default.vin = vin;
-                            selected_inventory.set(new_default);
-                        }
+                        } else {
+                        let result = result.unwrap();
+                        cloned.push(result);
+                        all_inventory.set(Some(cloned));
+
                     }
+                    {
+                        let mut new_default = SanitizedInventory::default();
+                        new_default.vin = vin;
+                        selected_inventory.set(new_default);
+                        formatted.set(String::new());
+                    }
+
+
 
                 } else {
                     error.write().code = 5001;
