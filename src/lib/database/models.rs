@@ -262,9 +262,7 @@ impl Inventory {
                 false => self.vin.to_owned()
             };
 
-            let inv = format!("{} {} {} {} {}", color, year, make, model, vin_last_four);
-
-            let formatted = format!("{} {} {} {} {}", color, year, make, model, vin_last_four);
+            let formatted = format!("{} {} {} {} {}", make, model, year, color, vin_last_four);
             formatted.trim().to_string().to_uppercase()
         }
 
@@ -314,10 +312,20 @@ impl Inventory {
             _ => String::new()
         };
 
+        // If the year includes a decimal, strip.
+        let year = match self.year.find("0") {
+            None => self.year.to_owned(),
+            Some(_) => {
+                let year = self.year.to_string();
+                let year_split = year.split(".");
+                year_split.clone().nth(0).unwrap().to_string()
+            }
+        };
+
         SanitizedInventory {
             id: self.id.clone().to_uppercase(),
             vin: self.vin.clone().to_uppercase(),
-            year: self.year.clone(),
+            year,
             make: self.make.clone().to_uppercase(),
             model: model.to_uppercase(),
             body: body.to_uppercase(),
