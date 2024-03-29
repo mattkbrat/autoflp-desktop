@@ -1,6 +1,6 @@
+use crate::lib::finance::calc::FinanceCalc;
 use chrono::{Datelike, NaiveDate};
 use chronoutil::RelativeDuration;
-use crate::lib::finance::calc::FinanceCalc;
 
 use crate::lib::finance::next_payment_date::months_between_dates;
 
@@ -13,9 +13,6 @@ struct FinanceHistoryRow<'r> {
     delinquent: &'r str,
 }
 
-
-
-
 type FinanceHistory<'r> = Vec<FinanceHistoryRow<'r>>;
 
 struct AmortizationScheduleParams<'r> {
@@ -24,9 +21,8 @@ struct AmortizationScheduleParams<'r> {
     number_of_payments: &'r i8,
     pmt: &'r f64,
     history: Option<FinanceHistory<'r>>,
-    finance: FinanceCalc<'r>,
+    finance: FinanceCalc,
 }
-
 
 type SchedulePayment = (f64, NaiveDate);
 
@@ -44,7 +40,6 @@ struct ScheduleRow {
 
 type Schedule = Vec<ScheduleRow>;
 
-
 struct AmortizationSchedule {
     schedule: Schedule,
     total_paid: f32,
@@ -52,17 +47,17 @@ struct AmortizationSchedule {
     total_principal: f32,
 }
 
-pub(crate) fn get_amortization_schedule(p: AmortizationScheduleParams) -> AmortizationSchedule
-{
+pub(crate) fn get_amortization_schedule(p: AmortizationScheduleParams) -> AmortizationSchedule {
     let finance = p.finance;
     let history = p.history;
     let monthly_rate = match p.annual_rate > &0.0 {
         true => p.annual_rate / 100.0,
-        false => 1.0
+        false => 1.0,
     } / 12.0;
 
-    let start_date = NaiveDate::parse_from_str(finance.first_payment_due_date, "%Y-%m-%d").unwrap();
-    let end_date = NaiveDate::parse_from_str(finance.last_payment_due_date, "%Y-%m-%d").unwrap();
+    let start_date =
+        NaiveDate::parse_from_str(&finance.first_payment_due_date, "%Y-%m-%d").unwrap();
+    let end_date = NaiveDate::parse_from_str(&finance.last_payment_due_date, "%Y-%m-%d").unwrap();
 
     let mut total_paid = f64::from(0.0);
     let mut total_interest = f64::from(0.0);
@@ -70,10 +65,17 @@ pub(crate) fn get_amortization_schedule(p: AmortizationScheduleParams) -> Amorti
 
     let mut balance = finance.finance_amount.clone();
 
-
     let (number_of_payments, row_count, history) = match history {
-        Some(x) => (x.len(), months_between_dates(&start_date, &end_date), x.clone()),
-        None => (*p.number_of_payments as usize, *p.number_of_payments as i32, Vec::new())
+        Some(x) => (
+            x.len(),
+            months_between_dates(&start_date, &end_date),
+            x.clone(),
+        ),
+        None => (
+            *p.number_of_payments as usize,
+            *p.number_of_payments as i32,
+            Vec::new(),
+        ),
     };
 
     let mut temp_schedule: Schedule = Vec::new();
@@ -97,7 +99,6 @@ pub(crate) fn get_amortization_schedule(p: AmortizationScheduleParams) -> Amorti
         if history.len() == 0 {
             payment_vec.push((pmt, date));
         }
-
 
         temp_schedule.push(ScheduleRow {
             date,
@@ -127,8 +128,14 @@ pub(crate) fn get_amortization_schedule(p: AmortizationScheduleParams) -> Amorti
             let date_check_month = date_check.month();
             let date_check_year = date_check.year();
 
-            let paid = history.paid.parse::<f64>().expect("Error parsing history.paid");
-            let date = history.date.parse::<NaiveDate>().expect("Error parsing history.date");
+            let paid = history
+                .paid
+                .parse::<f64>()
+                .expect("Error parsing history.paid");
+            let date = history
+                .date
+                .parse::<NaiveDate>()
+                .expect("Error parsing history.date");
 
             if date_check < start_date {
                 payments_before_start += paid.clone();
@@ -144,14 +151,19 @@ pub(crate) fn get_amortization_schedule(p: AmortizationScheduleParams) -> Amorti
             });
 
             if schedule_index.is_none() {
-                println!("Payment with date {} is outside of the schedule", date_check);
+                println!(
+                    "Payment with date {} is outside of the schedule",
+                    date_check
+                );
                 continue;
             }
 
             let schedule_index = schedule_index.unwrap();
 
             // Allow for multiple payments in one month.
-            temp_schedule[schedule_index].payment.push((paid.into(), date));
+            temp_schedule[schedule_index]
+                .payment
+                .push((paid.into(), date));
             // let total_paid_month = temp_schedule[schedule_index].payment.iter().map(|x| x.0).sum::<f32>();
             // let expected_paid_month = temp_schedule[schedule_index.unwrap()].expected_payment;
             temp_schedule[schedule_index].total_paid += paid;
@@ -179,8 +191,11 @@ mod tests {
 
     #[test]
     fn test_amortization_schedule() {
+        use crate::lib::finance::amortization_schedule::{
+            get_amortization_schedule, AmortizationSchedule, AmortizationScheduleParams,
+            FinanceCalc, FinanceHistoryRow,
+        };
         use chrono::NaiveDate;
-        use crate::lib::finance::amortization_schedule::{AmortizationSchedule, AmortizationScheduleParams, FinanceCalc, FinanceHistoryRow, get_amortization_schedule};
         let params = AmortizationScheduleParams {
             principal: &10000.0,
             annual_rate: &5.0,
@@ -252,24 +267,24 @@ mod tests {
                 },
             ]),
             finance: FinanceCalc {
-                selling_trade_differential: &0.0,
-                state_tax_dollar: &0.0,
-                county_tax_dollar: &0.0,
-                city_tax_dollar: &0.0,
-                rtd_tax_dollar: &0.0,
-                total_tax_dollar: &0.0,
-                total_tax_percent: &0.0,
-                cash_balance_with_tax: &0.0,
-                unpaid_cash_balance: &0.0,
-                finance_amount: &0.0,
-                total_loan: &0.0,
-                deferred_payment: &0.0,
-                monthly_payment: &0.0,
-                last_payment: &0.0,
-                last_payment_due_date: "2020-12-01",
-                first_payment_due_date: "2020-01-01",
-                deferred: &0.0,
-                total_cost: &0.0,
+                selling_trade_differential: 0.0,
+                state_tax_dollar: 0.0,
+                county_tax_dollar: 0.0,
+                city_tax_dollar: 0.0,
+                rtd_tax_dollar: 0.0,
+                total_tax_dollar: 0.0,
+                total_tax_percent: 0.0,
+                cash_balance_with_tax: 0.0,
+                unpaid_cash_balance: 0.0,
+                finance_amount: 0.0,
+                total_loan: 0.0,
+                deferred_payment: 0.0,
+                monthly_payment: 0.0,
+                last_payment: 0.0,
+                last_payment_due_date: "2020-12-01".to_string(),
+                first_payment_due_date: "2020-01-01".to_string(),
+                deferred: 0.0,
+                total_cost: 0.0,
             },
         };
         let schedule = get_amortization_schedule(params);
@@ -278,3 +293,4 @@ mod tests {
         assert_eq!(schedule.total_principal, 9000.0);
     }
 }
+
