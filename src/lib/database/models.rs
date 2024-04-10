@@ -55,8 +55,9 @@ pub struct Charge {
     pub date_effective: String,
 }
 
-#[derive(Queryable, Debug, Selectable)]
+#[derive(Queryable, Debug, Selectable, PartialEq, Identifiable, Associations)]
 #[diesel(table_name = creditor)]
+#[diesel(belongs_to(Person, foreign_key = contact))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Creditor {
     pub id: String,
