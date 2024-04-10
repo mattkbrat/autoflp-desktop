@@ -7,12 +7,13 @@ use dioxus_router::prelude::*;
 use account::get_account_people::get_account_people;
 
 use crate::client;
-use crate::client::{PeopleProps, Route, SelectedAccount, SelectedDeal};
+use crate::client::{PeopleNamesVec, Route, SelectedAccount, SelectedDeal};
 use crate::client::account::deal_list::DealList;
 use crate::lib::account::get_full_name::{full_name_from_person, FullNameFormat};
 use crate::lib::database::account;
 use crate::lib::database::account::get_account_details::get_account_details;
 use crate::lib::database::models::{Person, PersonName};
+use crate::lib::database::schema::charge::name;
 
 pub mod deal_viewer;
 pub mod deal_list;
@@ -20,28 +21,9 @@ pub mod account_form;
 
 #[component]
 pub fn AccountPage(cx: Scope) -> Element {
-    let people = get_account_people();
+    use_shared_state_provider(cx, || SelectedAccount::default());
 
-    let mut names = people.iter().map(|x| {
-        let last = (&x.0).to_string();
-        let first = (&x.1).to_string();
-
-        let full_name = full_name_from_person(&PersonName {
-            first_name: first,
-            last_name: last,
-            middle_initial: None,
-            name_prefix: None,
-            name_suffix: None,
-        }, FullNameFormat::LastFirstMiddleSuffix, true);
-
-        [full_name, (&x.2).to_string()]
-    }).collect::<client::People>();
-
-    let new_account: [String; 2] = ["New Account".to_string(), "".to_string()];
-
-    names.insert(0, new_account);
-
-    cx.render(rsx!( PeopleList { people: names } ))
+    cx.render(rsx!( PeopleList {} ))
 }
 
 #[component]
@@ -58,10 +40,12 @@ pub fn Account(cx: Scope) -> Element {
 }
 
 // #[component]
-pub fn PeopleList(cx: Scope<PeopleProps>) -> Element {
+pub fn PeopleList(cx: Scope) -> Element {
     let selected_account = use_shared_state::<SelectedAccount>(cx).unwrap();
     let selected_account_id = use_state(cx, || String::new());
     let selected_deal = use_shared_state::<SelectedDeal>(cx).unwrap();
+    let names = use_shared_state::<PeopleNamesVec>(cx).unwrap();
+
 
     // Ideally, this would be a use_callback that is called when the id changes. For now, this works.
     // Only fetch the user data when the id changes.
@@ -114,7 +98,7 @@ pub fn PeopleList(cx: Scope<PeopleProps>) -> Element {
                     selected_account_id.set(event.value.clone());
                     selected_deal.write().id = String::new();
                 },
-                cx.props.people.iter().map(|[x, y]| rsx!{ option {
+                names.read().iter().map(|[x, y]| rsx!{ option {
                     class: "bg-slate-800 text-white text-lg",
                     key: "${&y}", id: "${&x}", value: "{&y}", x.clone() }} )
             }

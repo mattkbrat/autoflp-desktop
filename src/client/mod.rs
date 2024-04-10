@@ -20,12 +20,17 @@ use finance::page::FinancePage;
 use inventory::InventoryPage;
 use meta::{Home, PageNotFound};
 use nav_bar::NavBar;
+use crate::lib::database::account::get_account_people::{AccountPeople, get_account_people};
 
 use crate::lib::database::models::{Account, Person, PersonName};
 use crate::lib::finance::add;
 use crate::lib::qotd::{fetch_quotable, Quotable, Root};
 use crate::lib::unsplash::fetch::fetch_unsplash;
-use crate::lib::unsplash::structs::{UnsplashIndex, UnsplashResultParsed, UnsplashResults};
+use crate::lib::unsplash::structs::{Root2, UnsplashIndex, UnsplashResultParsed, UnsplashResults};
+
+pub type PeopleNamesVec = Vec<[String; 2]>;
+pub type PeopleVec = Vec<[String; 2]>;
+
 
 // ANCHOR: router
 #[derive(Routable, Clone)]
@@ -64,6 +69,8 @@ pub fn App(cx: Scope) -> Element {
     use_shared_state_provider(cx, || UnsplashResults::default());
     use_shared_state_provider(cx, || Quotable::default());
     use_shared_state_provider(cx, || UnsplashIndex::default());
+    use_shared_state_provider(cx, || PeopleNamesVec::new());
+    use_shared_state_provider(cx, || AccountPeople::new());
 
     render! {
         Router::<Route> {}
@@ -91,13 +98,8 @@ fn ErrorDisplay(cx: Scope) -> Element {
     })
 }
 
-pub type People = Vec<[String; 2]>;
 
 // Remember: Owned props must implement `PartialEq`!
-#[derive(PartialEq, Props)]
-pub struct PeopleProps {
-    people: People,
-}
 
 #[derive(Clone, Debug, PartialEq, Props)]
 pub struct SelectedDealDetails {
