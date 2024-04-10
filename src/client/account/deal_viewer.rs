@@ -1,3 +1,4 @@
+use diesel::dsl::now;
 use dioxus::core::{Element, Scope};
 use dioxus::core_macro::component;
 use dioxus::hooks::{to_owned, use_effect, use_shared_state, use_state};
@@ -8,12 +9,12 @@ use models::PaymentForm;
 use payment::add_payment;
 
 use crate::client::{Error, SelectedAccount, SelectedDeal};
-use crate::lib::database::{deal, models, payment};
 use crate::lib::database::payment::delete_payment;
+use crate::lib::database::{deal, models, payment};
+use crate::lib::date::get_today::get_today_string;
 
 #[component]
 pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
-
     // let deal = use_state(cx, || None);
     let deal = use_state(cx, || None);
     let refresh_details = use_state(cx, || false);
@@ -27,16 +28,16 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
         cx.spawn({
             to_owned![refresh_details, error, selected_deal, selected_account];
             async move {
-            let account_string = SelectedAccount::details(selected_account.read().clone());
-            let pmt_result = add_payment(pmt, account_string.to_owned()).await;
-            if pmt_result.is_ok() {
-                refresh_details.set(!refresh_details.get());
-                error.write().code = 0;
-            } else {
-                // error_message.set(pmt_result.unwrap_err());
-                error.write().code = 5001;
-                error.write().message = pmt_result.unwrap_err();
-            }
+                let account_string = SelectedAccount::details(selected_account.read().clone());
+                let pmt_result = add_payment(pmt, account_string.to_owned()).await;
+                if pmt_result.is_ok() {
+                    refresh_details.set(!refresh_details.get());
+                    error.write().code = 0;
+                } else {
+                    // error_message.set(pmt_result.unwrap_err());
+                    error.write().code = 5001;
+                    error.write().message = pmt_result.unwrap_err();
+                }
             }
         });
     };
@@ -61,23 +62,25 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
         });
     };
 
-
-    use_effect(cx, (selected_deal, refresh_details), |(selected_deal, _, )| {
-        to_owned![deal, deal_id];
-        async move {
-            let deal_details = get_deal_details(Some(selected_deal.read().id.clone()));
-            if let Some(deal_details) = deal_details {
-                deal.set(Some(deal_details));
-            } else {
-                deal.set(None);
+    use_effect(
+        cx,
+        (selected_deal, refresh_details),
+        |(selected_deal, _)| {
+            to_owned![deal, deal_id];
+            async move {
+                let deal_details = get_deal_details(Some(selected_deal.read().id.clone()));
+                if let Some(deal_details) = deal_details {
+                    deal.set(Some(deal_details));
+                } else {
+                    deal.set(None);
+                }
             }
-        }
-    });
+        },
+    );
 
     if selected_deal.read().id.len() == 0 {
         return render!( p { "Select a Deal" } );
     }
-
 
     if deal.is_none() {
         return render!( p { "No Deal Selected" } );
@@ -94,7 +97,7 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
             deal.lien.clone().unwrap()
             // lien.unwrap()
         }
-        None => String::from("Cash Deal")
+        None => String::from("Cash Deal"),
     };
 
     // let lien = lien.unwrap();
@@ -105,7 +108,7 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
     let default_payment = match pmt {
         Some(pmt) if deal_state == 1 => (pmt.parse::<f32>().unwrap() / 10.0).floor() * 10.0,
         None if deal_state == 1 => "100".parse::<f32>().unwrap(),
-        _ => 0.0
+        _ => 0.0,
     };
 
     // let account_string = format!("{:?}", deal.account);
@@ -119,6 +122,8 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
     let state_string = String::from(state_string);
     let account_string = SelectedAccount::details(selected_account.read().clone());
     let inventory_string = SelectedDeal::details(selected_deal.read().clone());
+
+    let today = get_today_string();
 
     render!(
 
@@ -155,7 +160,7 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
                         }
                     },
                     input { name: "id", class: "hidden", r#type: "id", value: "{deal.id}" }
-                    input { name: "date", r#type: "date", value: "2024-08-02" }
+                    input { name: "date", r#type: "date", value: "{today}" }
                     input {
                         name: "amount",
                         r#type: "number",
