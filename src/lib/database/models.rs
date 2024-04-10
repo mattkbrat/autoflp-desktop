@@ -446,6 +446,32 @@ impl PersonForm {
     }
 }
 
+impl Person {
+    pub fn address_pretty(&self) -> String {
+        format!(
+            "{}\n{}\n{}\n{}, {} {}",
+            self.address_1,
+            self.address_2.clone().unwrap_or_default(),
+            self.address_3.clone().unwrap_or_default(),
+            self.city,
+            self.state_province,
+            self.zip_postal
+        )
+    }
+
+    pub fn address(&self) -> String {
+        let address_parts = vec![
+            self.address_1.clone(),
+            self.address_2.clone().unwrap_or_default(),
+            self.address_3.clone().unwrap_or_default(),
+            self.city.clone(),
+            self.state_province.clone(),
+            self.zip_postal.clone(),
+        ];
+        address_parts.join(" ")
+    }
+}
+
 impl Default for Person {
     fn default() -> Self {
         Person {
