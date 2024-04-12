@@ -1,7 +1,8 @@
-
 use crate::lib::finance::next_payment_date::add_months;
 use chrono::NaiveDate;
+use crate::lib::finance::round_to_penny::round_to_penny;
 
+#[derive(Debug, Clone)]
 pub(crate) struct Taxes {
     pub(crate) city: f64,
     pub(crate) county: f64,
@@ -9,16 +10,51 @@ pub(crate) struct Taxes {
     pub(crate) state: f64,
 }
 
+impl Taxes {
+    pub(crate) fn new() -> Self {
+        Taxes {
+            city: 2.9,
+            county: 0.0,
+            rtd: 0.0,
+            state: 4.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub(crate) struct Prices {
     pub(crate) selling: f64,
     pub(crate) down: f64,
     pub(crate) trade: f64,
 }
 
+impl Prices {
+    pub(crate) fn new() -> Self {
+        Prices {
+            selling: 0.0,
+            down: 0.0,
+            trade: 0.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub(crate) struct Creditor {
     pub(crate) filingFees: f64,
     pub(crate) apr: f64,
     pub(crate) term: i32,
+    pub(crate) id: String,
+}
+
+impl Creditor {
+    pub(crate) fn new() -> Self {
+        Creditor {
+            filingFees: 0.0,
+            apr: 10.0,
+            term: 12,
+            id: String::new(),
+        }
+    }
 }
 
 pub(crate) struct FinanceCalcParams {
@@ -28,7 +64,7 @@ pub(crate) struct FinanceCalcParams {
     pub(crate) first_payment: NaiveDate,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct FinanceCalc {
     pub(crate) selling_trade_differential: f64,
     pub(crate) state_tax_dollar: f64,
@@ -48,6 +84,43 @@ pub(crate) struct FinanceCalc {
     pub(crate) first_payment_due_date: String,
     pub(crate) deferred: f64,
     pub(crate) total_cost: f64,
+}
+
+impl FinanceCalc {
+    pub(crate) fn try_into(self) -> Result<Self, &'static str> {
+        if self.total_loan.is_nan() {
+            return Err("Total loan is NaN");
+        }
+
+        if self.total_loan.is_infinite() {
+            return Err("Total loan is infinite");
+        }
+
+        Ok(self)
+    }
+
+    pub(crate) fn new() -> Self {
+        FinanceCalc {
+            selling_trade_differential: 0.0,
+            state_tax_dollar: 0.0,
+            county_tax_dollar: 0.0,
+            city_tax_dollar: 0.0,
+            rtd_tax_dollar: 0.0,
+            total_tax_dollar: 0.0,
+            total_tax_percent: 0.0,
+            cash_balance_with_tax: 0.0,
+            unpaid_cash_balance: 0.0,
+            finance_amount: 0.0,
+            total_loan: 0.0,
+            deferred_payment: 0.0,
+            monthly_payment: 0.0,
+            last_payment: 0.0,
+            last_payment_due_date: String::new(),
+            first_payment_due_date: String::new(),
+            deferred: 0.0,
+            total_cost: 0.0,
+        }
+    }
 }
 
 fn get_percent(num: &f64) -> f64 {
@@ -98,7 +171,7 @@ pub(crate) fn calculate_finance(p: FinanceCalcParams) -> FinanceCalc {
         total_tax_percent,
         cash_balance_with_tax,
         unpaid_cash_balance,
-        finance_amount,
+        finance_amount: round_to_penny(finance_amount),
         total_loan: finance_amount + deferred,
         deferred_payment: deferred,
         monthly_payment: finance_amount / f64::from(creditor.term.clone()),
@@ -109,7 +182,7 @@ pub(crate) fn calculate_finance(p: FinanceCalcParams) -> FinanceCalc {
         total_cost: selling_trade_diff + total_tax_dollar + creditor.filingFees,
     };
 
-    if creditor.term <= 0 {
+    if creditor.term <= 0 || creditor.apr <= 0.0 {
         return finance_calc
             .try_into()
             .expect("Failed to convert to FinanceCalc");
@@ -132,16 +205,17 @@ pub(crate) fn calculate_finance(p: FinanceCalcParams) -> FinanceCalc {
     let last_payment =
         payment_rounded_to_cents + total_loan_amount - payment_rounded_to_cents * term_float;
 
+
     let last_payment_due_date = add_months(first_payment, creditor.term);
 
     let total_cost = prices.selling + total_tax_dollar + creditor.filingFees + deferred_payment;
 
-    finance_calc.monthly_payment = payment_rounded_to_cents;
-    finance_calc.last_payment = last_payment;
+    finance_calc.monthly_payment = round_to_penny(payment_rounded_to_cents);
+    finance_calc.last_payment = round_to_penny(last_payment);
     finance_calc.last_payment_due_date = last_payment_due_date.to_string();
-    finance_calc.total_loan = total_loan_amount;
-    finance_calc.deferred_payment = deferred_payment;
-    finance_calc.total_cost = total_cost;
+    finance_calc.total_loan = round_to_penny(total_loan_amount);
+    finance_calc.deferred_payment = round_to_penny(deferred_payment);
+    finance_calc.total_cost = round_to_penny(total_cost);
 
     finance_calc
         .try_into()
@@ -171,6 +245,7 @@ mod tests {
             filingFees: 20.0,
             apr: 2.5,
             term: 12,
+            id: String::new(),
         };
 
         let first_payment = NaiveDate::from_ymd(2020, 1, 1);
