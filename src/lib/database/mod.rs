@@ -3,11 +3,11 @@ use dotenvy::dotenv;
 use std::env;
 
 pub mod account;
-pub mod models;
-pub mod schema;
-pub mod payment;
 pub mod deal;
- pub mod inventory;
+pub mod inventory;
+pub mod models;
+pub mod payment;
+pub mod schema;
 
 pub fn establish_connection() -> SqliteConnection {
     dotenv().ok();

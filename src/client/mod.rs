@@ -1,30 +1,35 @@
-
-mod nav_bar;
 mod account;
-mod meta;
+mod finance;
 mod inventory;
+mod meta;
 mod motd;
+mod nav_bar;
 
 use dioxus::hooks::use_shared_state_provider;
-use dioxus::prelude::*;
 use dioxus::prelude::render;
-use dioxus_router::prelude::{Routable, Router};
+use dioxus::prelude::*;
 use dioxus_router::prelude::*;
+use dioxus_router::prelude::{Routable, Router};
 
-use account::{Account, deal_viewer, People};
-use deal_viewer::DealViewer;
-use meta::{Home, PageNotFound};
-use nav_bar::NavBar;
-use inventory::{InventoryPage};
 use crate::lib;
 use crate::lib::account::get_full_name::{full_name_from_person, FullNameFormat};
 use crate::lib::database::deal::DealsByAccount;
+use account::{deal_viewer, Account, People};
+use deal_viewer::DealViewer;
+use finance::page::FinancePage;
+use inventory::InventoryPage;
+use meta::{Home, PageNotFound};
+use nav_bar::NavBar;
+use crate::lib::database::account::get_account_people::{AccountPeople, get_account_people};
 
 use crate::lib::database::models::{Account, Person, PersonName};
 use crate::lib::finance::add;
 use crate::lib::qotd::{fetch_quotable, Quotable, Root};
 use crate::lib::unsplash::fetch::fetch_unsplash;
-use crate::lib::unsplash::structs::{UnsplashIndex, UnsplashResultParsed, UnsplashResults};
+use crate::lib::unsplash::structs::{Root2, UnsplashIndex, UnsplashResultParsed, UnsplashResults};
+
+pub type PeopleNamesVec = Vec<[String; 2]>;
+pub type PeopleVec = Vec<[String; 2]>;
 
 
 // ANCHOR: router
@@ -64,8 +69,8 @@ pub fn App(cx: Scope) -> Element {
     use_shared_state_provider(cx, || UnsplashResults::default());
     use_shared_state_provider(cx, || Quotable::default());
     use_shared_state_provider(cx, || UnsplashIndex::default());
-
-
+    use_shared_state_provider(cx, || PeopleNamesVec::new());
+    use_shared_state_provider(cx, || AccountPeople::new());
 
     render! {
         Router::<Route> {}
@@ -82,7 +87,6 @@ fn ErrorDisplay(cx: Scope) -> Element {
         return render!(rsx! { div {} });
     }
 
-
     let error_message = error.read().message.clone();
 
     cx.render(rsx! {
@@ -94,13 +98,8 @@ fn ErrorDisplay(cx: Scope) -> Element {
     })
 }
 
-pub type People = Vec<[String; 2]>;
 
 // Remember: Owned props must implement `PartialEq`!
-#[derive(PartialEq, Props)]
-pub struct PeopleProps {
-    people: People,
-}
 
 #[derive(Clone, Debug, PartialEq, Props)]
 pub struct SelectedDealDetails {
@@ -109,9 +108,9 @@ pub struct SelectedDealDetails {
 }
 
 #[derive(Clone, Debug, PartialEq, Props)]
-pub struct SelectedDeal{
+pub struct SelectedDeal {
     id: String,
-    details: SelectedDealDetails
+    details: SelectedDealDetails,
 }
 
 impl Default for SelectedDeal {
@@ -122,7 +121,7 @@ impl Default for SelectedDeal {
             details: SelectedDealDetails {
                 inventory_string: String::new(),
                 open: false,
-            }
+            },
         }
     }
 }
@@ -135,7 +134,11 @@ impl SelectedDeal {
 }
 
 #[derive(Clone, Debug, PartialEq, Props)]
-pub struct SelectedAccount{account: Account, person: Person, deals: DealsByAccount}
+pub struct SelectedAccount {
+    account: Account,
+    person: Person,
+    deals: DealsByAccount,
+}
 
 impl Default for SelectedDealDetails {
     // call with `SelectedDeal::default()`
@@ -148,11 +151,17 @@ impl Default for SelectedDealDetails {
 }
 
 #[derive(Clone, Debug, PartialEq, Props)]
-pub struct Error{code: u32, message: String}
+pub struct Error {
+    code: u32,
+    message: String,
+}
 
 impl Default for Error {
     fn default() -> Self {
-        Error{code: 0, message: String::new()}
+        Error {
+            code: 0,
+            message: String::new(),
+        }
     }
 }
 
@@ -165,54 +174,35 @@ impl Error {
 impl Default for SelectedAccount {
     // call with `SelectedDeal::default()`
     fn default() -> Self {
-        SelectedAccount{account: Account::default(), person: Person::default(), deals: vec![]}
+        SelectedAccount {
+            account: Account::default(),
+            person: Person::default(),
+            deals: vec![],
+        }
     }
 }
 
 impl SelectedAccount {
     // call with `SelectedDeal::account_details()`
     pub fn full_name(&self) -> String {
-        format!("{}", full_name_from_person(&PersonName{
-            first_name: self.person.first_name.to_string(),
-            last_name: self.person.last_name.to_string(),
-            middle_initial: None,
-            name_prefix: None,
-            name_suffix: None,
-        }, FullNameFormat::LastFirstMiddleSuffix, true)).to_uppercase()
+        format!(
+            "{}",
+            full_name_from_person(
+                &PersonName {
+                    first_name: self.person.first_name.to_string(),
+                    last_name: self.person.last_name.to_string(),
+                    middle_initial: None,
+                    name_prefix: None,
+                    name_suffix: None,
+                },
+                FullNameFormat::LastFirstMiddleSuffix,
+                true
+            )
+        )
+        .to_uppercase()
     }
 
     pub fn details(self) -> String {
         format!("{}", &self.full_name()).to_uppercase()
     }
-}
-
-
-#[component]
-pub fn FinancePage(cx: Scope) -> Element {
-    let amount = use_state(cx, || 0);
-    let sum = use_state(cx, || 0);
-
-    use_effect(cx, (amount, ), |(amount, )| {
-        to_owned![sum];
-        async move {
-            let user = add::add(amount.get(), 2);
-            sum.set(user);
-        }
-    });
-
-    cx.render(rsx!(
-        div {
-            input {
-                value: "{amount}",
-                r#type: "number",
-                oninput: move |evt| amount.set(evt.value.clone().parse::<u32>().unwrap())
-            }
-            input {
-                value: "{sum}",
-                r#type: "number",
-                readonly: true,
-                oninput: move |evt| amount.set(evt.value.clone().parse::<u32>().unwrap())
-            }
-        }
-    ))
 }

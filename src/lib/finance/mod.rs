@@ -7,7 +7,8 @@ pub struct DateLogic {
     pub current_date: NaiveDate,
 }
 
-
 pub mod add;
-pub mod round_to_penny;
+mod amortization_schedule;
+pub(crate) mod calc;
 pub mod next_payment_date;
+pub mod round_to_penny;

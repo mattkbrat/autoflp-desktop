@@ -9,6 +9,7 @@ pub mod get_people;
 pub mod get_account_people;
 pub mod get_account_details;
 pub mod update_person;
+pub(crate) mod get_creditors;
 
 // pub fn get_account_details(account_id: Option<String>) -> Option<(Vec<(Deal, Inventory)>, Person, Account)> {
 //     if account_id.is_none() {

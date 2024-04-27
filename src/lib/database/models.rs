@@ -55,8 +55,9 @@ pub struct Charge {
     pub date_effective: String,
 }
 
-#[derive(Queryable, Debug, Selectable)]
+#[derive(Queryable, Debug, Selectable, PartialEq, Identifiable, Associations)]
 #[diesel(table_name = creditor)]
+#[diesel(belongs_to(Person, foreign_key = contact))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Creditor {
     pub id: String,
@@ -262,9 +263,7 @@ impl Inventory {
                 false => self.vin.to_owned()
             };
 
-            let inv = format!("{} {} {} {} {}", color, year, make, model, vin_last_four);
-
-            let formatted = format!("{} {} {} {} {}", color, year, make, model, vin_last_four);
+            let formatted = format!("{} {} {} {} {}", make, model, year, color, vin_last_four);
             formatted.trim().to_string().to_uppercase()
         }
 
@@ -314,10 +313,20 @@ impl Inventory {
             _ => String::new()
         };
 
+        // If the year includes a decimal, strip.
+        let year = match self.year.find("0") {
+            None => self.year.to_owned(),
+            Some(_) => {
+                let year = self.year.to_string();
+                let year_split = year.split(".");
+                year_split.clone().nth(0).unwrap().to_string()
+            }
+        };
+
         SanitizedInventory {
             id: self.id.clone().to_uppercase(),
             vin: self.vin.clone().to_uppercase(),
-            year: self.year.clone(),
+            year,
             make: self.make.clone().to_uppercase(),
             model: model.to_uppercase(),
             body: body.to_uppercase(),
@@ -435,6 +444,43 @@ impl PersonForm {
             email_primary: Some(self.email_primary),
             email_secondary: Some(self.email_secondary),
         }
+    }
+}
+
+impl Person {
+    pub fn address_pretty(&self) -> String {
+        format!(
+            "{}\n{}\n{}\n{}, {} {}",
+            self.address_1,
+            self.address_2.clone().unwrap_or_default(),
+            self.address_3.clone().unwrap_or_default(),
+            self.city,
+            self.state_province,
+            self.zip_postal
+        )
+    }
+
+    pub fn address(&self) -> String {
+
+        let address_line_1 =
+        vec![
+            self.address_1.clone(),
+            self.address_2.clone().unwrap_or_default(),
+            self.address_3.clone().unwrap_or_default(),
+        ].join(" ").trim().to_string();
+
+        // street [PO Box, etc], city, state zip
+
+        let address_parts = vec![
+            address_line_1,
+            self.city.clone(),
+            format!("{} {}",
+            self.state_province.clone(),
+            self.zip_postal.clone(),
+            ),
+        ];
+
+        address_parts.join(", ").trim().to_string()
     }
 }
 
