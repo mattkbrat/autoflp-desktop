@@ -1,12 +1,17 @@
-use diesel::{QueryDsl, RunQueryDsl};
 use crate::lib::database;
 use crate::lib::database::models::{Payment, PaymentForm};
-use crate::lib::database::schema::{payment};
-use uuid::Uuid;
-use crate::lib::pushover::{notify_payment, PaymentMessage};
+use crate::lib::database::schema::payment;
 use crate::lib::pushover::message::TransactionType;
+use crate::lib::pushover::{notify_payment, PaymentMessage};
+use diesel::{QueryDsl, RunQueryDsl};
+use serde::de::Error;
+use uuid::Uuid;
 
 pub async fn add_payment(new_payment_data: PaymentForm, account: String) -> Result<i32, String> {
+    if new_payment_data.deal.is_empty() {
+        println!("Invalid payment ID");
+        return Err("Invalid payment ID".to_string());
+    }
 
     let mut conn = database::establish_connection();
 
@@ -17,13 +22,9 @@ pub async fn add_payment(new_payment_data: PaymentForm, account: String) -> Resu
         id: Uuid::new_v4().to_string(),
     };
 
-
     let new_payment = diesel::insert_into(payment::table)
-        .values(
-            pmt
-        )
+        .values(pmt)
         .execute(&mut conn);
-
 
     if new_payment.is_ok() {
         let amount = new_payment_data.amount.parse().unwrap();
@@ -32,10 +33,12 @@ pub async fn add_payment(new_payment_data: PaymentForm, account: String) -> Resu
             PaymentMessage {
                 amount,
                 currency: String::from("$"),
-                account: String::from(account),
+                account,
             },
-            TransactionType::New
-        ).await.unwrap();
+            TransactionType::New,
+        )
+        .await
+        .unwrap();
 
         return Ok(200);
     }
@@ -62,23 +65,18 @@ pub fn get_payment(payment_id: &str) -> Option<Payment> {
 
     match payment {
         Ok(p) => Some(p),
-        Err(_) => None
+        Err(_) => None,
     }
 }
 
 pub async fn delete_payment(payment_id: &str, account: String) -> Result<i32, String> {
     let mut conn = database::establish_connection();
 
-
     // sqlite does not support returning clause :(
 
-    let this_payment = payment::table.find(payment_id)
-        .first::<Payment>(&mut conn);
+    let this_payment = payment::table.find(payment_id).first::<Payment>(&mut conn);
 
-    let deleted_payment = diesel::delete(
-        payment::table.find(payment_id)
-    )
-        .execute(&mut conn);
+    let deleted_payment = diesel::delete(payment::table.find(payment_id)).execute(&mut conn);
 
     if deleted_payment.is_ok() {
         let payment = this_payment.unwrap();
@@ -90,8 +88,10 @@ pub async fn delete_payment(payment_id: &str, account: String) -> Result<i32, St
                 currency: String::from("$"),
                 account: String::from(account),
             },
-            TransactionType::Delete
-        ).await.unwrap();
+            TransactionType::Delete,
+        )
+        .await
+        .unwrap();
 
         return Ok(200);
     }
@@ -100,3 +100,4 @@ pub async fn delete_payment(payment_id: &str, account: String) -> Result<i32, St
 
     return Err(error_message);
 }
+

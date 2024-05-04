@@ -14,26 +14,23 @@ use crate::lib::database::{deal, models, payment};
 use crate::lib::date::get_today::get_today_string;
 
 #[component]
-pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
+pub fn DealViewer(cx: Scope, deal_id: String, account: SelectedAccount) -> Element {
     // let deal = use_state(cx, || None);
     let deal = use_state(cx, || None);
     let refresh_details = use_state(cx, || false);
     let selected_deal = use_shared_state::<SelectedDeal>(cx).unwrap();
-    let selected_account = use_shared_state::<SelectedAccount>(cx).unwrap();
     let error = use_shared_state::<Error>(cx).unwrap();
-
-    let logged_in = use_state(cx, || false);
 
     let handle_record_payment = move |pmt: PaymentForm| {
         cx.spawn({
-            to_owned![refresh_details, error, selected_deal, selected_account];
+            to_owned![refresh_details, error, account];
             async move {
-                let account_string = SelectedAccount::details(selected_account.read().clone());
+                let account_string = SelectedAccount::details(&account);
                 let pmt_result = add_payment(pmt, account_string.to_owned()).await;
                 if pmt_result.is_ok() {
                     refresh_details.set(!refresh_details.get());
-                    error.write().code = 0;
                 } else {
+                    error.write().code = 0;
                     // error_message.set(pmt_result.unwrap_err());
                     error.write().code = 5001;
                     error.write().message = pmt_result.unwrap_err();
@@ -44,9 +41,9 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
 
     let handle_delete_payment = move |id: String| {
         cx.spawn({
-            to_owned![refresh_details, error, selected_deal, selected_account];
+            to_owned![refresh_details, error, selected_deal, account];
             async move {
-                let account_string = SelectedAccount::details(selected_account.read().clone());
+                let account_string = SelectedAccount::details(&account);
                 let result = delete_payment(&id, account_string.to_owned()).await;
                 if result.is_ok() {
                     refresh_details.set(!refresh_details.get());
@@ -78,7 +75,7 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
         },
     );
 
-    if selected_deal.read().id.len() == 0 {
+    if selected_deal.read().id.is_empty() {
         return render!( p { "Select a Deal" } );
     }
 
@@ -90,13 +87,10 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
 
     let deal = details_ref.unwrap();
 
-    let (deal, inventory, creditor, payments) = deal;
+    let (deal, inventory, _creditor, payments) = deal;
 
     let lien = match &deal.lien {
-        Some(x) => {
-            deal.lien.clone().unwrap()
-            // lien.unwrap()
-        }
+        Some(_) => deal.lien.clone().unwrap(),
         None => String::from("Cash Deal"),
     };
 
@@ -120,7 +114,7 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
     };
 
     let state_string = String::from(state_string);
-    let account_string = SelectedAccount::details(selected_account.read().clone());
+    let account_string = use_memo(cx, account, |account| SelectedAccount::details(&account));
     let inventory_string = SelectedDeal::details(selected_deal.read().clone());
 
     let today = get_today_string();
@@ -129,6 +123,8 @@ pub fn DealViewer(cx: Scope, deal_id: String) -> Element {
 
         // div {class: "flex flex-row gap-4",
         div { class: "flex flex-col justify-evenly min-w-1/2 max-w-5/6 bg-surface-900 text-surface-200 p-2 gap-4",
+            p {
+            }
             h2 { class: "text-3xl underline", "{account_string} {inventory_string}" }
             div { class: "flex flex-row gap-4 border-b-2 border-primary-500 pb-4",
                 span { class: "{state_class} font-bold", "{state_string}" }

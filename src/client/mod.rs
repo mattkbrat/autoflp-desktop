@@ -13,6 +13,7 @@ use dioxus_router::prelude::{Routable, Router};
 
 use crate::lib;
 use crate::lib::account::get_full_name::{full_name_from_person, FullNameFormat};
+use crate::lib::database::account::get_account_people::{get_account_people, AccountPeople};
 use crate::lib::database::deal::DealsByAccount;
 use account::{deal_viewer, Account, People};
 use deal_viewer::DealViewer;
@@ -20,7 +21,6 @@ use finance::page::FinancePage;
 use inventory::InventoryPage;
 use meta::{Home, PageNotFound};
 use nav_bar::NavBar;
-use crate::lib::database::account::get_account_people::{AccountPeople, get_account_people};
 
 use crate::lib::database::models::{Account, Person, PersonName};
 use crate::lib::finance::add;
@@ -30,7 +30,6 @@ use crate::lib::unsplash::structs::{Root2, UnsplashIndex, UnsplashResultParsed, 
 
 pub type PeopleNamesVec = Vec<[String; 2]>;
 pub type PeopleVec = Vec<[String; 2]>;
-
 
 // ANCHOR: router
 #[derive(Routable, Clone)]
@@ -45,7 +44,7 @@ pub enum Route {
     #[route("/")]
     Account {},
     #[route("/people/:deal_id")]
-    DealViewer { deal_id: String },
+    DealViewer { deal_id: String, account: SelectedAccount},
     #[end_layout]
     #[end_nest]
     #[route("/finance")]
@@ -97,7 +96,6 @@ fn ErrorDisplay(cx: Scope) -> Element {
         }
     })
 }
-
 
 // Remember: Owned props must implement `PartialEq`!
 
@@ -202,7 +200,7 @@ impl SelectedAccount {
         .to_uppercase()
     }
 
-    pub fn details(self) -> String {
-        format!("{}", &self.full_name()).to_uppercase()
+    pub fn details(&self) -> String {
+        (&self.full_name()).to_string().to_uppercase()
     }
 }

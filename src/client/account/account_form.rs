@@ -112,11 +112,21 @@ pub fn AccountForm(cx: Scope) -> Element {
                 };
                 handle_update_account(person_form.clone());
             },
-            input { name: "id", class: "hidden", r#type: "text", value: "{&person.id}" }
+            input {
+                name: "id",
+                class: "hidden",
+                r#type: "text",
+                value: "{&person.id}"
+            }
 
             label { class: "flex flex-col",
                 "Prefix"
-                input { name: "prefix", class: "uppercase", r#type: "text", value: "{prefix}" }
+                input {
+                    name: "prefix",
+                    class: "uppercase",
+                    r#type: "text",
+                    value: "{prefix}"
+                }
             }
             label { class: "flex flex-col",
                 "First Name"
@@ -147,7 +157,12 @@ pub fn AccountForm(cx: Scope) -> Element {
             }
             label { class: "flex flex-col",
                 "Suffix"
-                input { name: "suffix", class: "uppercase", r#type: "text", value: "{suffix}" }
+                input {
+                    name: "suffix",
+                    class: "uppercase",
+                    r#type: "text",
+                    value: "{suffix}"
+                }
             }
 
             // Full-width label
@@ -282,7 +297,11 @@ pub fn AccountForm(cx: Scope) -> Element {
                 }
             }
 
-            button { class: "btn-success w-1/2 mx-auto col-span-full", r#type: "submit", "Submit" }
+            button {
+                class: "btn-success w-1/2 mx-auto col-span-full",
+                r#type: "submit",
+                "Submit"
+            }
         }
     )
 }

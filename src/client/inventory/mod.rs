@@ -1,7 +1,7 @@
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
-
+use std::collections::HashMap;
 use inventory::get_inventory_by_id::get_inventory_by_id;
 
 use crate::client::Error;
@@ -25,36 +25,52 @@ pub fn InventoryPage(cx: Scope) -> Element {
     let formatted = use_state(cx, || String::new());
     let error = use_shared_state::<Error>(cx).unwrap();
     let vin_fetched = use_state(cx, || FetchedVin::default());
-
+    let fetched_vins = use_ref(cx, || HashMap::<String, NHTSALookup>::new());
 
 
     let handle_lookup = move |_| {
         cx.spawn({
-            to_owned![error, selected_inventory, vin_fetched, formatted];
+            to_owned![error, selected_inventory, vin_fetched, formatted, fetched_vins];
             async move {
-                let fetched = get_vehicle_info(selected_inventory.vin.clone()).await;
-                let is_ok = fetched.is_ok();
+                let vin = &selected_inventory.vin;
+                let already_fetched = fetched_vins.with(|vins| vins.contains_key(vin));
 
-                let mut vehicle: Option<NHTSALookup> = None;
 
-                if is_ok {
-                    vin_fetched.set(selected_inventory.vin.clone());
-                    vehicle = Some(fetched.unwrap());
-                    error.write().code = 0;
+                let vehicle: Option<NHTSALookup> = match already_fetched {
+                    false => {
+                        let fetched = get_vehicle_info(selected_inventory.vin.clone()).await;
+                        println!("Fetching vin {}", vin);
+                        let is_ok = fetched.is_ok();
 
-                } else {
-                    let fetch_error = fetched.unwrap_err();
-                    if fetch_error.0.is_some() {
-                        vehicle = Some(fetch_error.0.unwrap());
+                        let mut vehicle: Option<NHTSALookup> = None;
+
+                        if is_ok {
+                            vin_fetched.set(selected_inventory.vin.clone());
+                            let vehicle = fetched.unwrap();
+                            error.write().code = 0;
+                            fetched_vins.with_mut(|vins| vins.insert(selected_inventory.vin.clone(), vehicle.clone()));
+                            Some(vehicle)
+                        } else {
+                            let fetch_error = fetched.unwrap_err();
+                            error.write().code = 5002;
+                            error.write().message = fetch_error.1;
+                            if fetch_error.0.is_some() {
+                                vehicle = Some(fetch_error.0.unwrap());
+                                vehicle
+                            } else {
+                                None
+                            }
+                        }
                     }
-                    error.write().code = 5002;
-                    error.write().message = fetch_error.1;
-                }
+                    true => {
+                        let inner = &*fetched_vins.read();
+                        let vehicle = inner.get(vin);
+                        vehicle.map(|vehicle| vehicle.to_owned())
+                    }
+                };
 
                 let current_selected = selected_inventory.current();
-
                 if let Some(vehicle) = vehicle {
-
                     let new_inventory = SanitizedInventory {
                         id: current_selected.id.clone(),
                         vin: current_selected.vin.clone(),
@@ -76,8 +92,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
                     formatted.set(new_inventory.format().clone());
 
                     selected_inventory.set(new_inventory);
-
-                }
+                };
 
             }
         });
@@ -146,7 +161,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
                         println!("Failed to parse year: {} ({})", parsed.unwrap_err(), selected_year);
                         0
                     }
-                },
+                }
                 true => 0
             };
 
@@ -162,7 +177,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
                     false if is_set_to_exempt => Some("".to_string()),
                     _ => None,
                 };
-                if let Some(new_mileage_text) = new_mileage_text  {
+                if let Some(new_mileage_text) = new_mileage_text {
                     let mut this_inventory = selected_inventory.get().clone();
                     this_inventory.mileage = new_mileage_text;
                     selected_inventory.set(this_inventory);
@@ -171,59 +186,15 @@ pub fn InventoryPage(cx: Scope) -> Element {
         }
     });
 
-    use_effect(cx, (vin_fetched, selected_inventory), |(vin_fetched, selected_inventory)| {
-        to_owned![vin_fetched, selected_inventory, formatted, error];
-        async move {
-            let current_fetched = vin_fetched.get().clone();
-            if current_fetched != selected_inventory.vin && selected_inventory.vin.len() == 17 {
-                let fetched = get_vehicle_info(selected_inventory.vin.clone()).await;
-
-                let mut vehicle: Option<NHTSALookup> = None;
-
-                if fetched.is_ok() {
-                    vin_fetched.set(selected_inventory.vin.clone());
-                    vehicle = Some(fetched.unwrap());
-                    error.write().code = 0;
-
-                } else {
-                    let fetch_error = fetched.unwrap_err();
-                    if fetch_error.0.is_some() {
-                        vehicle = Some(fetch_error.0.unwrap());
-                    }
-                    error.write().code = 5002;
-                    error.write().message = fetch_error.1;
-                }
-
-                let current_selected = selected_inventory.current();
-
-                if let Some(vehicle) = vehicle {
-
-                    let new_inventory = SanitizedInventory {
-                        id: current_selected.id.clone(),
-                        vin: current_selected.vin.clone(),
-                        make: vehicle.make.clone(),
-                        model: vehicle.model.clone(),
-                        year: vehicle.year.clone(),
-                        color: current_selected.color.clone(),
-                        fuel: current_selected.fuel.clone(),
-                        cwt: current_selected.cwt.clone(),
-                        mileage: current_selected.mileage.clone(),
-                        date_modified: Option::from(get_today().to_string()),
-                        cash: current_selected.cash.clone(),
-                        credit: current_selected.credit.clone(),
-                        down: current_selected.down.clone(),
-                        body: current_selected.body.clone(),
-                        state: current_selected.state.clone(),
-                    };
-
-                    formatted.set(new_inventory.format().clone());
-
-                    selected_inventory.set(new_inventory);
-
-                }
-            }
-        }
-    });
+    // use_effect(cx, (selected_inventory), |(selected_inventory)| {
+    //     to_owned![handle_lookup, vin_fetched];
+    //     async move {
+    //         let current_fetched = vin_fetched.get().clone();
+    //         if current_fetched != selected_inventory.vin && selected_inventory.vin.len() == 17 {
+    //             handle_lookup(());
+    //         }
+    //     }
+    // });
 
     let handle_upsert = move |i: SanitizedInventory| {
         cx.spawn({
@@ -242,15 +213,14 @@ pub fn InventoryPage(cx: Scope) -> Element {
                     let mut cloned = all_inventory.get().clone().unwrap();
                     let found = cloned.iter().position(|x| x.vin.to_lowercase() == vin);
                     if found.is_some() {
-                            let found = found.unwrap();
-                            let result = result.unwrap();
-                            cloned[found] = result;
-                            all_inventory.set(Some(cloned));
-                        } else {
+                        let found = found.unwrap();
+                        let result = result.unwrap();
+                        cloned[found] = result;
+                        all_inventory.set(Some(cloned));
+                    } else {
                         let result = result.unwrap();
                         cloned.push(result);
                         all_inventory.set(Some(cloned));
-
                     }
                     {
                         let mut new_default = SanitizedInventory::default();
@@ -258,9 +228,6 @@ pub fn InventoryPage(cx: Scope) -> Element {
                         selected_inventory.set(new_default);
                         formatted.set(String::new());
                     }
-
-
-
                 } else {
                     error.write().code = 5001;
                     error.write().message = result.unwrap_err();
@@ -374,7 +341,7 @@ pub fn InventoryPage(cx: Scope) -> Element {
                         value: "{selected_inventory.vin}"
                     }
                 }
-                button { r#type: "button", onclick: handle_lookup,
+                button { r#type: "button", onclick: move |arg0: dioxus::prelude::Event<MouseData>| handle_lookup(()),
                     svg { class: "w-12 h-12", color: "currentColor", fill: "currentColor",
                         // Question Mark Lookup SVG
                         path { d: "M 21 3 C 11.621094 3 4 10.621094 4 20 C 4 29.378906 11.621094 37 21 37 C 24.710938 37 28.140625 35.804688 30.9375 33.78125 L 44.09375 46.90625 L 46.90625 44.09375 L 33.90625 31.0625 C 36.460938 28.085938 38 24.222656 38 20 C 38 10.621094 30.378906 3 21 3 Z M 21 5 C 29.296875 5 36 11.703125 36 20 C 36 28.296875 29.296875 35 21 35 C 12.703125 35 6 28.296875 6 20 C 6 11.703125 12.703125 5 21 5 Z" }

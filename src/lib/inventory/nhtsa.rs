@@ -3,7 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use serde_json::Value;
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct NHTSALookup {
     pub make: String,
     pub model: String,

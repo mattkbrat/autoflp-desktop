@@ -9,7 +9,9 @@ pub fn About(cx: Scope) -> Element {
         p { class: "text-2xl",
 
             b { "AutoFLP Desktop" }
-            pre { class: "text-sm", "Auto Dealer Management Software for Small, Family Owned Businesses" }
+            pre { class: "text-sm",
+                "Auto Dealer Management Software for Small, Family Owned Businesses"
+            }
         }
     ))
 }

@@ -28,10 +28,6 @@ pub(crate) async fn upsert_inventory(mut upsert: SanitizedInventory) -> Result<I
     let result = match (can_update) {
         true => {
             let selected_inventory = selected_inventory.unwrap();
-            println!("Selected inventory: {:?}", selected_inventory);
-            // if (selected_inventory.expect("MUST HAVE RESULT").is_empty()) {
-            //     return Err("Failed to update inventory".to_string());
-            // }
             let updated = diesel::update(&selected_inventory)
             .set(&upsert).execute(&mut conn);
 
