@@ -7,7 +7,7 @@ use models::{Account, Person};
 
 pub fn get_account_details(
     account_id: Option<String>,
-) -> Option<(Person, Account, DealsByAccount)> {
+) -> Option<(Person, Option<Account>, DealsByAccount)> {
     let mut conn = establish_connection();
 
     account_id.as_ref()?;
@@ -21,9 +21,14 @@ pub fn get_account_details(
     let account = account.unwrap();
 
     let (person, account) = account;
-    println!("got id {}", account.id);
 
-    let deals = get_deals_by_account(&account.id, &mut conn);
+    let mut deals = Vec::new();
+
+    if let Some(account) = account.clone() {
+        println!("got id {}", account.id);
+
+        deals = get_deals_by_account(&account.id, &mut conn);
+    }
 
     Some((person, account, deals))
 }

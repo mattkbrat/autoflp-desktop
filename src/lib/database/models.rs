@@ -3,12 +3,12 @@
 #![allow(unused)]
 #![allow(clippy::all)]
 
-use std::fmt::Debug;
-use diesel::prelude::*;
-use serde::Deserialize;
 use crate::lib::database::schema::*;
 use crate::lib::date::get_today::get_today;
 use crate::lib::inventory::nhtsa::NHTSALookup;
+use diesel::prelude::*;
+use serde::Deserialize;
+use std::fmt::Debug;
 
 #[derive(Queryable, Identifiable, Associations, Selectable, PartialEq, Debug, Clone)]
 #[diesel(table_name = account)]
@@ -43,7 +43,6 @@ impl Default for Account {
         }
     }
 }
-
 
 #[derive(Queryable, Debug, Selectable)]
 #[diesel(table_name = charge)]
@@ -232,85 +231,88 @@ impl SanitizedInventory {
 }
 
 impl Inventory {
-
     pub(crate) fn format(&self) -> String {
-            let make = match &self.make == "none" {
-                true => "",
-                false => &self.make
-            };
+        let make = match &self.make == "none" {
+            true => "",
+            false => &self.make,
+        };
 
-            let model = match &self.model {
-                Some(x) if x != "none" => x.to_owned(),
-                _ => String::new()
-            };
+        let model = match &self.model {
+            Some(x) if x != "none" => x.to_owned(),
+            _ => String::new(),
+        };
 
-            let year = match &self.year == "none" {
-                true => String::new(),
-                false => {
-                    let year = self.year.to_string();
-                    let year_split = year.split(".");
-                    year_split.clone().nth(0).unwrap().to_string()
-                }
-            };
+        let year = match &self.year == "none" {
+            true => String::new(),
+            false => {
+                let year = self.year.to_string();
+                let year_split = year.split(".");
+                year_split.clone().nth(0).unwrap().to_string()
+            }
+        };
 
-            let color = match &self.color {
-                Some(x) if x != "none" => x.to_owned(),
-                _ => String::new()
-            };
+        let color = match &self.color {
+            Some(x) if x != "none" => x.to_owned(),
+            _ => String::new(),
+        };
 
-            let vin_last_four = match &self.vin.len() > &4 {
-                true => self.vin.chars().skip(self.vin.len() - 4).collect::<String>(),
-                false => self.vin.to_owned()
-            };
+        let vin_last_four = match &self.vin.len() > &4 {
+            true => self
+                .vin
+                .chars()
+                .skip(self.vin.len() - 4)
+                .collect::<String>(),
+            false => self.vin.to_owned(),
+        };
 
-            let formatted = format!("{} {} {} {} {}", make, model, year, color, vin_last_four);
-            formatted.trim().to_string().to_uppercase()
-        }
+        let formatted = format!("{} {} {} {} {}", make, model, year, color, vin_last_four);
+        formatted.trim().to_string().to_uppercase()
+    }
 
-        pub(crate) fn sanitize(&self) -> SanitizedInventory {
+    pub(crate) fn sanitize(&self) -> SanitizedInventory {
         let model = match self.model.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
-            _ => String::new()
+            _ => String::new(),
         };
 
         let color = match self.color.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
-            _ => String::new()
+            _ => String::new(),
         };
 
         let mileage = match self.mileage.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
-            _ => String::new()
+            _ => String::new(),
         };
 
         let fuel = match self.fuel.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
-            _ => String::from("GAS")
+            _ => String::from("GAS"),
         };
 
         let cwt = match self.cwt.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
-            _ => String::new()
+            _ => String::new(),
         };
 
         let cash = match self.cash.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
-            _ => "0.0".to_string()
+            _ => "0.0".to_string(),
         };
 
         let credit = match self.credit.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
-            _ => "0.0".to_string()
+            _ => "0.0".to_string(),
         };
 
         let down = match self.down.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
-            _ => "0.0".to_string()
+            _ => "0.0".to_string(),
         };
 
         let body = match self.body.to_owned() {
             Some(x) if x != "none" && x != "null" => x,
-            _ => String::new()
+            _ => String::new(),
         };
 
         // If the year includes a decimal, strip.
@@ -340,7 +342,6 @@ impl Inventory {
             state: self.state.clone(),
             date_modified: Option::from(get_today().to_string()),
         }
-        
     }
 }
 
@@ -397,7 +398,9 @@ pub struct Person {
     pub email_secondary: Option<String>,
 }
 
-#[derive(Deserialize, Identifiable, Insertable, AsChangeset, Debug, PartialEq, Selectable, Clone)]
+#[derive(
+    Deserialize, Identifiable, Insertable, AsChangeset, Debug, PartialEq, Selectable, Clone,
+)]
 #[diesel(table_name = person)]
 pub struct PersonForm {
     pub id: String,
@@ -461,22 +464,24 @@ impl Person {
     }
 
     pub fn address(&self) -> String {
-
-        let address_line_1 =
-        vec![
+        let address_line_1 = vec![
             self.address_1.clone(),
             self.address_2.clone().unwrap_or_default(),
             self.address_3.clone().unwrap_or_default(),
-        ].join(" ").trim().to_string();
+        ]
+        .join(" ")
+        .trim()
+        .to_string();
 
         // street [PO Box, etc], city, state zip
 
         let address_parts = vec![
             address_line_1,
             self.city.clone(),
-            format!("{} {}",
-            self.state_province.clone(),
-            self.zip_postal.clone(),
+            format!(
+                "{} {}",
+                self.state_province.clone(),
+                self.zip_postal.clone(),
             ),
         ];
 
@@ -496,9 +501,9 @@ impl Default for Person {
             address_1: String::new(),
             address_2: None,
             address_3: None,
-            city: String::new(),
-            state_province: String::new(),
-            zip_postal: String::new(),
+            city: String::from("Fort Morgan"),
+            state_province: String::from("CO"),
+            zip_postal: String::from("80701"),
             zip_4: None,
             country: String::new(),
             phone_primary: String::new(),
@@ -547,4 +552,3 @@ pub struct User {
     pub username: String,
     pub email: String,
 }
-

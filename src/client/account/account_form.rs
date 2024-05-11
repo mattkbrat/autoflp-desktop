@@ -1,13 +1,12 @@
-use dioxus::hooks::{to_owned, use_effect, use_shared_state, use_state};
-use dioxus::prelude::*;
 use crate::client::{Error, SelectedAccount};
 use crate::lib::database::account::update_person::update_details;
 use crate::lib::database::models::{Account, PaymentForm, Person, PersonForm};
 use crate::lib::database::payment::add_payment;
+use dioxus::hooks::{to_owned, use_effect, use_shared_state, use_state};
+use dioxus::prelude::*;
 
 #[component]
 pub fn AccountForm(cx: Scope) -> Element {
-
     let selected_account = use_shared_state::<SelectedAccount>(cx).unwrap();
     let error = use_shared_state::<Error>(cx).unwrap();
 
@@ -21,6 +20,14 @@ pub fn AccountForm(cx: Scope) -> Element {
                 // let account_string = SelectedAccount::details(selected_account.read().clone());
                 let result = update_details(person.clone()).await;
                 if result.is_ok() {
+                    let result_code = result.unwrap();
+                    if result_code == 200 {
+                        println!("Updated")
+                    } else if result_code == 201 {
+                        println!("Created")
+                    } else {
+                        println!("unknown success")
+                    }
                     error.write().code = 0;
                     selected_account.write().person = PersonForm::to_person(person);
                 } else {
@@ -31,55 +38,54 @@ pub fn AccountForm(cx: Scope) -> Element {
         });
     };
 
-
     let prefix = match &person.name_prefix {
         Some(prefix) => prefix.to_owned(),
-        None => "".to_owned()
+        None => "".to_owned(),
     };
 
     let suffix = match &person.name_suffix {
         Some(suffix) => suffix.to_owned(),
-        None => "".to_owned()
+        None => "".to_owned(),
     };
 
     let middle_initial = match &person.middle_initial {
         Some(middle) => middle.to_owned(),
-        None => "".to_owned()
+        None => "".to_owned(),
     };
 
     let address_2 = match &person.address_2 {
         Some(address) => address.to_owned(),
-        None => "".to_owned()
+        None => "".to_owned(),
     };
 
     let address_3 = match &person.address_3 {
         Some(address) => address.to_owned(),
-        None => "".to_owned()
+        None => "".to_owned(),
     };
 
     let zip_4 = match &person.zip_4 {
         Some(zip) => zip.to_owned(),
-        None => "".to_owned()
+        None => "".to_owned(),
     };
 
     let phone_secondary = match &person.phone_secondary {
         Some(phone) => phone.to_owned(),
-        None => "".to_owned()
+        None => "".to_owned(),
     };
 
     let phone_tertiary = match &person.phone_tertiary {
         Some(phone) => phone.to_owned(),
-        None => "".to_owned()
+        None => "".to_owned(),
     };
 
     let email_primary = match &person.email_primary {
         Some(email) => email.to_owned(),
-        None => "".to_owned()
+        None => "".to_owned(),
     };
 
     let email_secondary = match &person.email_secondary {
         Some(email) => email.to_owned(),
-        None => "".to_owned()
+        None => "".to_owned(),
     };
 
     render!(
@@ -87,7 +93,6 @@ pub fn AccountForm(cx: Scope) -> Element {
         form {
             class: "grid grid-cols-5 gap-4 uppercase text-left",
             onsubmit: move |event| {
-                to_owned![error, selected_account];
                 let values = &event.data.values;
                 let person_form = PersonForm {
                     id: values.get("id").unwrap()[0].to_string(),

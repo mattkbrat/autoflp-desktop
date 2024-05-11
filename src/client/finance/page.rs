@@ -2,7 +2,7 @@ use crate::client::{Error, SelectedAccount};
 use crate::lib::database::account::get_account_details::get_account_details;
 use crate::lib::database::account::get_account_people::AccountPeople;
 use crate::lib::database::account::get_creditors::get_creditors;
-use crate::lib::database::models::Person;
+use crate::lib::database::models::{Account, Person};
 use crate::lib::date::get_today::get_today_string;
 use chrono::NaiveDate;
 use diesel::row::NamedRow;
@@ -63,18 +63,23 @@ pub fn FinancePage(cx: Scope) -> Element {
             let account_details = get_account_details(Some(selected_account_id.get().clone()));
             if let Some(account_details) = account_details {
                 let (person, acc, deals) = &account_details;
-                let new_account = crate::lib::database::models::Account {
-                    id: acc.id.clone(),
-                    contact: acc.contact.clone(),
-                    date_of_birth: acc.date_of_birth.clone(),
-                    license_expiration: acc.license_expiration.clone(),
-                    license_number: acc.license_number.clone(),
-                    notes: acc.notes.clone(),
-                    cosigner: acc.cosigner.clone(),
-                    current_standing: acc.current_standing.clone(),
-                    date_added: acc.date_added.clone(),
-                    date_modified: acc.date_modified.clone(),
-                };
+                let mut new_account = Account::default();
+                if let Some(acc) = acc {
+                    new_account = crate::lib::database::models::Account {
+                        id: acc.id.clone(),
+                        contact: acc.contact.clone(),
+                        date_of_birth: acc.date_of_birth.clone(),
+                        license_expiration: acc.license_expiration.clone(),
+                        license_number: acc.license_number.clone(),
+                        notes: acc.notes.clone(),
+                        cosigner: acc.cosigner.clone(),
+                        current_standing: acc.current_standing.clone(),
+                        date_added: acc.date_added.clone(),
+                        date_modified: acc.date_modified.clone(),
+                    };
+                }
+
+                println!("Got account, {:?}", new_account);
                 let new_person = Person {
                     first_name: person.first_name.to_string(),
                     last_name: person.last_name.to_string(),
@@ -109,10 +114,18 @@ pub fn FinancePage(cx: Scope) -> Element {
     let account = &person_account.account;
 
     let address = person.address();
-    let license = account.license_number.clone();
-    let expiration = account.license_expiration.clone().unwrap_or_default();
-    let date_of_birth = account.date_of_birth.clone().unwrap_or_default();
     let email = person.email_primary.clone().unwrap_or_default();
+    let expiration = match &account.license_expiration {
+        Some(expiration) => expiration.split(' ').next().unwrap().to_string(),
+        None => "".to_owned(),
+    };
+
+    let license = &account.license_number;
+
+    let date_of_birth = match &account.date_of_birth {
+        Some(expiration) => expiration.split(' ').next().unwrap().to_string(),
+        None => "".to_owned(),
+    };
 
     let calculated = use_memo(
         cx,
@@ -209,19 +222,20 @@ pub fn FinancePage(cx: Scope) -> Element {
             h2 { class: "text-xl col-span-full", "Account Details" }
             label { class: "flex flex-col",
                 "License"
-                p { class: "uppercase", "{license}" }
+                input { name: "license_number", class: "uppercase",value: "{license}" }
             }
             label { class: "flex flex-col",
                 "Expiration"
-                p { class: "uppercase", "{expiration}" }
-            }
-            label { class: "flex flex-col",
-                "Address"
-                p { class: "uppercase", "{address}" }
+                input { name: "license_expiration", class: "uppercase", value: "{expiration}" }
             }
             label { class: "flex flex-col",
                 "Date of Birth"
-                p { class: "uppercase", "{date_of_birth}" }
+                input { name: "date_of_birth", class: "uppercase", value: "{date_of_birth}" }
+            }
+            span {  }
+            label { class: "flex flex-col",
+                "Address"
+                p { class: "uppercase", "{address}" }
             }
             label { class: "flex flex-col",
                 "Email"
@@ -233,7 +247,6 @@ pub fn FinancePage(cx: Scope) -> Element {
                 p { class: "uppercase", "{person.phone_primary}" }
             }
 
-            span { class: "col-span-2" }
 
 
 

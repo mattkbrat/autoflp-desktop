@@ -7,7 +7,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, SqliteC
 pub fn get_account(
     person_id: Option<&String>,
     conn: &mut SqliteConnection,
-) -> Option<(Person, Account)> {
+) -> Option<(Person, Option<Account>)> {
     person_id?;
 
     let this_id = person_id.unwrap();
@@ -16,12 +16,12 @@ pub fn get_account(
         return None;
     }
 
-    let mut selected_person = account::table
-        .inner_join(person::table)
+    let mut selected_person = person::table
+        .left_outer_join(account::table)
         .filter(personId.eq(this_id))
         .or_filter(account_id.eq(this_id))
-        .select((Person::as_select(), Account::as_select()))
-        .load::<(Person, Account)>(conn)
+        .select((Person::as_select(), Option::<Account>::as_select()))
+        .load::<(Person, Option<Account>)>(conn)
         .expect("Failed")
         .into_iter();
 

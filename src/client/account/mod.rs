@@ -12,7 +12,7 @@ use crate::client::{PeopleNamesVec, Route, SelectedAccount, SelectedDeal};
 use crate::lib::account::get_full_name::{full_name_from_person, FullNameFormat};
 use crate::lib::database::account;
 use crate::lib::database::account::get_account_details::get_account_details;
-use crate::lib::database::models::{Person, PersonName};
+use crate::lib::database::models::{Account, Person, PersonName};
 use crate::lib::database::schema::charge::name;
 
 pub mod account_form;
@@ -51,21 +51,25 @@ pub fn PeopleList(cx: Scope) -> Element {
     use_effect(cx, (selected_account_id,), |(selected_account_id,)| {
         to_owned![selected_account, selected_deal];
         async move {
-            let account_details = get_account_details(Some(selected_account_id.get().clone()));
+            let id = selected_account_id.get();
+            let account_details = get_account_details(Some(id.clone()));
             if let Some(account_details) = account_details {
                 let (person, acc, deals) = &account_details;
-                let new_account = crate::lib::database::models::Account {
-                    id: acc.id.clone(),
-                    contact: acc.contact.clone(),
-                    date_of_birth: acc.date_of_birth.clone(),
-                    license_expiration: acc.license_expiration.clone(),
-                    license_number: acc.license_number.clone(),
-                    notes: acc.notes.clone(),
-                    cosigner: acc.cosigner.clone(),
-                    current_standing: acc.current_standing.clone(),
-                    date_added: acc.date_added.clone(),
-                    date_modified: acc.date_modified.clone(),
-                };
+                let mut new_account = Account::default();
+                if let Some(acc) = acc {
+                    new_account = Account {
+                        id: acc.id.clone(),
+                        contact: acc.contact.clone(),
+                        date_of_birth: acc.date_of_birth.clone(),
+                        license_expiration: acc.license_expiration.clone(),
+                        license_number: acc.license_number.clone(),
+                        notes: acc.notes.clone(),
+                        cosigner: acc.cosigner.clone(),
+                        current_standing: acc.current_standing.clone(),
+                        date_added: acc.date_added.clone(),
+                        date_modified: acc.date_modified.clone(),
+                    };
+                }
                 let new_person = Person {
                     first_name: person.first_name.to_string(),
                     last_name: person.last_name.to_string(),
@@ -94,6 +98,10 @@ pub fn PeopleList(cx: Scope) -> Element {
                     selected_deal.write().id = deals[0].clone().0;
                     selected_account.write().deals = deals.clone();
                 }
+            } else {
+                println!("Could not find {}", id);
+                selected_account.write().account = Account::default();
+                selected_account.write().person = Person::default();
             }
         }
     });
@@ -105,12 +113,18 @@ pub fn PeopleList(cx: Scope) -> Element {
                 class: "!text-black text-lg",
                 onchange: move |event| {
                     to_owned![selected_account_id, selected_deal];
+                    println!("New account selected {:?}", selected_account_id.get());
                     selected_account_id.set(event.value.clone());
                     selected_deal.write().id = String::new();
                 },
-                names.read().iter().map(|[x, y]| rsx!{ option {
+                    option {
                     class: "bg-slate-800 text-white text-lg",
-                    key: "${&y}", id: "${&x}", value: "{&y}", x.clone() }} )
+                    id: "", value: "", "New account" }
+                names.read().iter().map(|[x, y]| rsx!{
+                    option {
+                    class: "bg-slate-800 text-white text-lg",
+                    key: "${&y}", id: "${&x}", value: "{&y}", x.clone() }
+                } )
             }
         }
         DealList { id: selected_account.read().account.id.clone() }
