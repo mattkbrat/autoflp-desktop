@@ -237,6 +237,29 @@ pub fn InventoryPage(cx: Scope) -> Element {
     };
 
 
+    let handle_toggle_state = move |_| {
+        cx.spawn({
+            to_owned![error, selected_inventory, formatted];
+            async move {
+                let mut current = selected_inventory.get().clone();
+                current.state = match current.state {
+                    1 => 0, 
+                    _ => 1
+                };
+                let upserted = upsert_inventory(current).await;
+                if upserted.is_err() {
+                            error.write().code = 5002;
+                            error.write().message = "Failed to update inventory".to_string();
+                } else {
+                    println!("Updated inventory");
+                        let mut new_default = SanitizedInventory::default();
+                        selected_inventory.set(new_default);
+                        formatted.set(String::new());
+                }
+            }
+        });
+    };
+
     let all = all_inventory.as_ref();
 
     let (next_state, next_state_string) = match inventory_state.get() {
@@ -439,7 +462,17 @@ pub fn InventoryPage(cx: Scope) -> Element {
                     value: "{selected_inventory.down}"
                 }
             }
-            button { class: "btn-success w-1/2 mx-auto col-span-full", r#type: "submit", "Submit" }
+            div {
+                class: "flex flex-row gap-4 col-span-full",
+            button { class: "btn-success w-1/2 mx-auto flex-1 max-w-1/2", r#type: "submit", "Submit" }
+            button { class: "btn-secondary  mx-auto col-span-full min-w-1/3", r#type: "button",
+
+                    onclick: handle_toggle_state, 
+             match selected_inventory.state {
+                0 => "Re-Open",
+                _ => "Close",
+            }  }
+            }
         }
     ))
 }
